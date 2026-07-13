@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>러시아어 읽기 학습기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Noto+Serif:wght@400;700&family=Noto+Sans:wght@400;700&family=Noto+Sans+KR:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fdf6e3;
+    --bg-alt:#eee8d5;
+    --fg:#000000;
+    --muted:#586e75;
+    --border:#93a1a1;
+    --accent:#268bd2;
+    --accent2:#2aa198;
+    --danger:#dc322f;
+    --notif-bg:#fffdf5;
+    --notif-border:#93a1a1;
+    --ru-font:'PT Serif', serif;
+    --ko-font:'Noto Sans KR', sans-serif;
+    --ru-size:20px;
+    --ko-size:16px;
+  }
+  body.dark{
+    --bg:#002b36;
+    --bg-alt:#073642;
+    --fg:#eee8d5;
+    --muted:#93a1a1;
+    --border:#586e75;
+    --accent:#2aa198;
+    --accent2:#268bd2;
+    --danger:#ff6e64;
+    --notif-bg:#073642;
+    --notif-border:#586e75;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--bg);
+    color:var(--fg);
+    font-family:var(--ko-font);
+    transition:background .2s,color .2s;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    background:var(--bg-alt);
+    color:var(--fg);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:6px 10px;
+    font-size:13px;
+  }
+  button:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  select,input[type=range],input[type=text],textarea{
+    font-family:inherit;
+    background:var(--bg-alt);
+    color:var(--fg);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:5px;
+  }
+  h1,h2,h3{margin:.2em 0;}
+  .layout{
+    display:grid;
+    grid-template-columns: 250px 1fr 300px;
+    grid-template-areas: "left main right";
+    min-height:100vh;
+  }
+  #controls{
+    grid-area:left;
+    border-right:1px solid var(--border);
+    padding:14px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    overflow-y:auto;
+    max-height:100vh;
+    position:sticky;
+    top:0;
+  }
+  .ctrl-group{
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .ctrl-group h4{margin:0 0 4px 0;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .ctrl-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .main-col{
+    grid-area:main;
+    display:flex;
+    flex-direction:column;
+    padding:20px 30px;
+    max-width:900px;
+    margin:0 auto;
+    width:100%;
+  }
+  .page-wrap{flex:1;}
+  .paragraph-block{display:flex;flex-direction:column;gap:14px;}
+  .para-text{
+    font-family:var(--ru-font);
+    font-size:var(--ru-size);
+    line-height:1.8;
+  }
+  .para-text.preserve-linebreaks{white-space:pre-wrap;}
+  .token{cursor:pointer;padding:0 1px;border-radius:3px;}
+  .token:hover{background:var(--bg-alt);}
+  .token.selected{background:var(--accent);color:#fff;}
+  .para-translation{
+    font-family:var(--ko-font);
+    font-size:var(--ko-size);
+    color:var(--muted);
+    border-top:1px dashed var(--border);
+    padding-top:10px;
+    min-height:1.4em;
+  }
+  .user-translation-block{
+    border-top:1px dashed var(--border);
+    padding-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .user-translation-input{
+    font-family:var(--ko-font);
+    font-size:var(--ko-size);
+    min-height:70px;
+    resize:vertical;
+    width:100%;
+    line-height:1.6;
+  }
+  .saved-translations{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .saved-translation-item{
+    background:var(--bg-alt);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 28px 8px 10px;
+    font-family:var(--ko-font);
+    font-size:var(--ko-size);
+    position:relative;
+    line-height:1.6;
+    white-space:pre-wrap;
+  }
+  .saved-translation-item .del-x{
+    position:absolute;top:6px;right:8px;
+    cursor:pointer;color:var(--muted);
+    font-size:12px;
+  }
+  .saved-translation-item .del-x:hover{color:var(--danger);}
+  .export-opts-row{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    font-size:13px;
+  }
+  .export-opts-row label{display:flex;align-items:center;gap:6px;cursor:pointer;}
+  .subtitle-meta{font-size:11px;color:var(--muted);}
+  .subtitle-meta > div{margin-top:2px;}
+  .subtitle-meta .caution{color:#b58900;font-weight:600;}
+  .subtitle-meta .danger{color:var(--danger);font-weight:700;}
+  .save-status{font-size:11px;color:var(--muted);}
+  .notif-panel{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .notif-block{
+    background:var(--notif-bg);
+    border:1px solid var(--notif-border);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:14px;
+    position:relative;
+  }
+  .notif-block .src{
+    font-family:var(--ru-font);
+    font-weight:700;
+    margin-bottom:4px;
+  }
+  .notif-block .pos-line{margin:2px 0;}
+  .notif-block .pos-label{color:var(--accent2);font-weight:700;margin-right:4px;}
+  .notif-block .close-x{
+    position:absolute;top:4px;right:6px;
+    cursor:pointer;color:var(--muted);
+    font-size:12px;
+  }
+  #notifPanelMobile{display:none;}
+  .side-right{
+    grid-area:right;
+    border-left:1px solid var(--border);
+    padding:14px 10px;
+    overflow-y:auto;
+    max-height:100vh;
+    position:sticky;
+    top:0;
+  }
+  .page-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    padding:16px 0;
+    border-top:1px solid var(--border);
+    margin-top:16px;
+  }
+  #pageIndicator{font-size:13px;color:var(--muted);}
+  textarea#pasteArea{width:100%;min-height:150px;font-family:var(--ru-font);}
+  .modal-overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.5);
+    align-items:center;justify-content:center;
+    z-index:100;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+    width:min(600px,90vw);
+    max-height:80vh;
+    overflow-y:auto;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .small-note{font-size:11px;color:var(--muted);}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;}
+  .btn-label{margin-left:2px;}
+  #drawerToggle{
+    display:none;
+    position:fixed;
+    top:12px;left:12px;
+    z-index:60;
+    width:40px;height:40px;
+    border-radius:6px;
+    align-items:center;justify-content:center;
+    font-size:17px;
+    background:var(--bg-alt);
+    border:1px solid var(--border);
+    box-shadow:none;
+    padding:0;
+  }
+  #drawerToggle:hover{border-color:var(--accent);}
+  #drawerBackdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.45);
+    z-index:45;
+  }
+  #drawerBackdrop.open{display:block;}
+  @media (max-width:900px){
+    .layout{
+      grid-template-columns:1fr;
+      grid-template-areas:"main";
+    }
+    #drawerToggle{display:flex;}
+    #controls{
+      grid-area:unset;
+      position:fixed;
+      top:0;left:0;bottom:0;
+      width:82%;
+      max-width:300px;
+      max-height:none;
+      flex-direction:column;
+      overflow-y:auto;
+      overflow-x:hidden;
+      background:var(--bg);
+      border-right:1px solid var(--border);
+      border-top:none;
+      padding:70px 14px 24px;
+      z-index:50;
+      transform:translateX(-105%);
+      transition:transform .25s ease;
+      box-shadow:2px 0 14px rgba(0,0,0,.22);
+    }
+    #controls.open{transform:translateX(0);}
+    .ctrl-group{min-width:0;width:100%;}
+    .side-right{display:none;}
+    #notifPanelMobile{display:flex;flex-direction:column;gap:8px;}
+    .main-col{padding:64px 14px 24px;}
+    .btn-label{display:none;}
+    button{padding:9px 11px;font-size:16px;}
+    .ctrl-row select, .ctrl-row input[type=range]{font-size:14px;}
+  }
+</style>
+</head>
+<body>
+<button id="drawerToggle" aria-label="설정 열기" title="설정">☰</button>
+<div id="drawerBackdrop"></div>
+<div class="layout" id="layout">
+  <aside id="controls">
+    <div class="ctrl-group">
+      <h4>글 불러오기</h4>
+      <div class="ctrl-row">
+        <button id="btnPaste" title="붙여넣기" aria-label="붙여넣기"><span class="icon">📋</span><span class="btn-label">붙여넣기</span></button>
+        <button id="btnLoadFile" title="파일 불러오기" aria-label="파일 불러오기"><span class="icon">📂</span><span class="btn-label">파일 불러오기</span></button>
+        <input type="file" id="fileInput" accept=".txt" style="display:none;">
+        <button id="btnLoadSubtitle" title="자막 파일 불러오기 (.srt/.vtt)" aria-label="자막 파일 불러오기"><span class="icon">🎬</span><span class="btn-label">자막 불러오기</span></button>
+        <input type="file" id="subtitleInput" accept=".srt,.vtt,.txt" style="display:none;">
+      </div>
+      <div class="small-note">자막 파일은 타임코드 1개 = 문단 1개로 자동 변환됩니다.</div>
+    </div>
+    <div class="ctrl-group">
+      <h4>이동</h4>
+      <div class="ctrl-row">
+        <select id="jumpSelect" style="max-width:100%;width:100%;"></select>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <h4>폰트 / 크기</h4>
+      <div class="ctrl-row">
+        <span class="small-note" style="width:100%;">러시아어 본문</span>
+        <select id="ruFontSelect">
+          <option value="'PT Serif', serif">PT Serif</option>
+          <option value="'Noto Serif', serif">Noto Serif</option>
+          <option value="'Noto Sans', sans-serif">Noto Sans</option>
+          <option value="Georgia, 'Times New Roman', serif">Georgia (시스템)</option>
+        </select>
+        <input type="range" id="ruSizeRange" min="14" max="34" value="20">
+      </div>
+      <div class="ctrl-row">
+        <span class="small-note" style="width:100%;">한국어 번역</span>
+        <select id="koFontSelect">
+          <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+          <option value="'Nanum Gothic', sans-serif">나눔고딕</option>
+          <option value="'Noto Serif KR', serif">Noto Serif KR</option>
+          <option value="'Malgun Gothic', sans-serif">맑은 고딕 (시스템)</option>
+        </select>
+        <input type="range" id="koSizeRange" min="12" max="28" value="16">
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <h4>번역 대상 언어</h4>
+      <div class="ctrl-row">
+        <select id="targetLangSelect">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <h4>화면</h4>
+      <div class="ctrl-row">
+        <button id="btnDark" title="다크 모드" aria-label="다크 모드 전환"><span class="icon">🌓</span><span class="btn-label">다크 모드</span></button>
+      </div>
+    </div>
+    <div class="ctrl-group">
+      <h4>중간 저장</h4>
+      <div class="ctrl-row">
+        <button id="btnSaveProgress" title="지금까지 작업한 내용을 브라우저에 저장" aria-label="중간 저장"><span class="icon">💾</span><span class="btn-label">중간 저장</span></button>
+        <button id="btnClearProgress" title="저장된 내용 삭제" aria-label="저장된 내용 삭제"><span class="icon">🗑️</span><span class="btn-label">저장 삭제</span></button>
+      </div>
+      <div class="save-status" id="saveStatusLabel">자동 저장: 아직 없음</div>
+    </div>
+    <div class="ctrl-group">
+      <h4>내보내기</h4>
+      <div class="ctrl-row">
+        <button id="btnExportTxt" title="TXT 다운로드" aria-label="TXT 다운로드"><span class="icon">📝</span><span class="btn-label">TXT 다운로드</span></button>
+        <button id="btnExportClipboard" title="클립보드 복사" aria-label="클립보드 복사"><span class="icon">📄</span><span class="btn-label">클립보드 복사</span></button>
+        <button id="btnExportSrt" title="SRT로 내보내기 (자막으로 불러온 경우)" aria-label="SRT로 내보내기"><span class="icon">🎞️</span><span class="btn-label">SRT 내보내기</span></button>
+        <button id="btnExportVtt" title="VTT로 내보내기 (자막으로 불러온 경우)" aria-label="VTT로 내보내기"><span class="icon">🎬</span><span class="btn-label">VTT 내보내기</span></button>
+      </div>
+      <div class="small-note">아래 각 문단의 "내보내기 항목" 체크박스로 무엇을 포함할지 고를 수 있습니다.</div>
+    </div>
+  </aside>
+
+  <main class="main-col">
+    <div class="page-wrap">
+      <div class="paragraph-block">
+        <div class="para-text" id="paraText">
+          <p class="small-note">상단 ☰ 버튼(데스크톱은 좌측 패널)의 "붙여넣기" 또는 "파일 불러오기"로 러시아어 글을 입력하세요.</p>
+        </div>
+        <div class="subtitle-meta" id="subtitleMeta" style="display:none;"></div>
+        <div class="notif-panel" id="notifPanelMobile"></div>
+        <div class="para-translation" id="paraTranslation"></div>
+        <div class="user-translation-block">
+          <label for="userTranslationInput" class="small-note">내 번역 (직접 입력 후 저장하면 아래에 쌓입니다)</label>
+          <textarea id="userTranslationInput" class="user-translation-input" placeholder="이 문단에 대한 나만의 번역을 적어보세요"></textarea>
+          <div class="ctrl-row" style="justify-content:flex-end;">
+            <button id="btnSaveTranslation" class="primary" title="이 번역 저장" aria-label="이 번역 저장"><span class="icon">➕</span><span class="btn-label">번역 저장</span></button>
+          </div>
+          <div class="saved-translations" id="savedTranslationsList"></div>
+        </div>
+      </div>
+    </div>
+    <div class="page-nav">
+      <button id="prevPage" title="이전 문단" aria-label="이전 문단"><span class="icon">◀</span><span class="btn-label">이전 문단</span></button>
+      <span id="pageIndicator">0 / 0</span>
+      <button id="nextPage" title="다음 문단" aria-label="다음 문단"><span class="btn-label">다음 문단</span><span class="icon">▶</span></button>
+    </div>
+  </main>
+
+  <aside class="side-right">
+    <div class="flex-between">
+      <h3 style="font-size:14px;">선택한 단어 / 구 번역</h3>
+      <button id="btnClearSel" style="font-size:11px;" title="전체 해제" aria-label="선택 전체 해제"><span class="icon">✕</span><span class="btn-label">전체 해제</span></button>
+    </div>
+    <div class="notif-panel" id="notifPanelDesktop"></div>
+  </aside>
+</div>
+
+<div class="modal-overlay" id="pasteModal">
+  <div class="modal">
+    <h3>러시아어 글 붙여넣기</h3>
+    <textarea id="pasteArea" placeholder="여기에 러시아어 텍스트를 붙여넣으세요..."></textarea>
+    <div class="ctrl-row" style="justify-content:flex-end;">
+      <button id="btnPasteCancel">취소</button>
+      <button id="btnPasteApply" class="primary">적용</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="exportOptsModal">
+  <div class="modal">
+    <h3 id="exportOptsTitle">내보내기 항목 선택</h3>
+    <div class="export-opts-row">
+      <label id="optExportParaLabel"><input type="checkbox" id="optExportPara"> 문단 번역 포함</label>
+      <label id="optExportUserLabel"><input type="checkbox" id="optExportUser"> 내 번역 포함</label>
+      <label id="optExportTokensLabel"><input type="checkbox" id="optExportTokens"> 선택 단어(토큰) 번역 포함</label>
+    </div>
+    <div class="small-note" id="exportOptsNote"></div>
+    <div class="ctrl-row" style="justify-content:flex-end;">
+      <button id="btnExportOptsCancel">취소</button>
+      <button id="btnExportOptsConfirm" class="primary">내보내기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- State ----------
+  const state = {
+    pages: [],           // {rawText, segments:[{type:'word'|'other', text, charStart, charEnd, wordIndex}], wordCount, selected:Set, cache:Map(runKey->result), paraTranslation:null}
+    current: 0,
+    exportOpts: {para:true, user:true, tokens:true}, // shared across export actions, chosen via popup at export time
+    subtitleBaseName: null, // original subtitle filename (without extension), used to name SRT/VTT exports
+    settings: {
+      ruFont: "'PT Serif', serif",
+      koFont: "'Noto Sans KR', sans-serif",
+      ruSize: 20,
+      koSize: 16,
+      dark: false,
+      targetLang: 'ko'
+    }
+  };
+
+  const LS_KEY = 'ru-reader-settings-v1';
+
+  function loadSettings(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(raw){
+        Object.assign(state.settings, JSON.parse(raw));
+      }
+    }catch(e){ /* ignore */ }
+  }
+  function saveSettings(){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(state.settings)); }catch(e){}
+  }
+
+  function applySettingsToDOM(){
+    const r = document.documentElement.style;
+    r.setProperty('--ru-font', state.settings.ruFont);
+    r.setProperty('--ko-font', state.settings.koFont);
+    r.setProperty('--ru-size', state.settings.ruSize+'px');
+    r.setProperty('--ko-size', state.settings.koSize+'px');
+    document.body.classList.toggle('dark', state.settings.dark);
+    ruFontSelect.value = state.settings.ruFont;
+    koFontSelect.value = state.settings.koFont;
+    ruSizeRange.value = state.settings.ruSize;
+    koSizeRange.value = state.settings.koSize;
+    targetLangSelect.value = state.settings.targetLang;
+  }
+
+  // ---------- DOM refs ----------
+  const paraText = document.getElementById('paraText');
+  const paraTranslation = document.getElementById('paraTranslation');
+  const notifPanelDesktop = document.getElementById('notifPanelDesktop');
+  const notifPanelMobile = document.getElementById('notifPanelMobile');
+  const pageIndicator = document.getElementById('pageIndicator');
+  const jumpSelect = document.getElementById('jumpSelect');
+  const prevPageBtn = document.getElementById('prevPage');
+  const nextPageBtn = document.getElementById('nextPage');
+  const ruFontSelect = document.getElementById('ruFontSelect');
+  const koFontSelect = document.getElementById('koFontSelect');
+  const ruSizeRange = document.getElementById('ruSizeRange');
+  const koSizeRange = document.getElementById('koSizeRange');
+  const targetLangSelect = document.getElementById('targetLangSelect');
+  const btnDark = document.getElementById('btnDark');
+  const btnPaste = document.getElementById('btnPaste');
+  const btnLoadFile = document.getElementById('btnLoadFile');
+  const fileInput = document.getElementById('fileInput');
+  const btnLoadSubtitle = document.getElementById('btnLoadSubtitle');
+  const subtitleInput = document.getElementById('subtitleInput');
+  const userTranslationInput = document.getElementById('userTranslationInput');
+  const btnSaveTranslation = document.getElementById('btnSaveTranslation');
+  const savedTranslationsList = document.getElementById('savedTranslationsList');
+  const subtitleMeta = document.getElementById('subtitleMeta');
+  const optExportPara = document.getElementById('optExportPara');
+  const optExportUser = document.getElementById('optExportUser');
+  const optExportTokens = document.getElementById('optExportTokens');
+  const optExportParaLabel = document.getElementById('optExportParaLabel');
+  const optExportUserLabel = document.getElementById('optExportUserLabel');
+  const optExportTokensLabel = document.getElementById('optExportTokensLabel');
+  const exportOptsModal = document.getElementById('exportOptsModal');
+  const exportOptsTitle = document.getElementById('exportOptsTitle');
+  const exportOptsNote = document.getElementById('exportOptsNote');
+  const btnExportOptsCancel = document.getElementById('btnExportOptsCancel');
+  const btnExportOptsConfirm = document.getElementById('btnExportOptsConfirm');
+  const btnSaveProgress = document.getElementById('btnSaveProgress');
+  const btnClearProgress = document.getElementById('btnClearProgress');
+  const saveStatusLabel = document.getElementById('saveStatusLabel');
+  const pasteModal = document.getElementById('pasteModal');
+  const pasteArea = document.getElementById('pasteArea');
+  const btnPasteCancel = document.getElementById('btnPasteCancel');
+  const btnPasteApply = document.getElementById('btnPasteApply');
+  const btnClearSel = document.getElementById('btnClearSel');
+  const btnExportTxt = document.getElementById('btnExportTxt');
+  const btnExportClipboard = document.getElementById('btnExportClipboard');
+  const btnExportSrt = document.getElementById('btnExportSrt');
+  const btnExportVtt = document.getElementById('btnExportVtt');
+  const drawerToggle = document.getElementById('drawerToggle');
+  const drawerBackdrop = document.getElementById('drawerBackdrop');
+  const controlsEl = document.getElementById('controls');
+
+  function setDrawer(open){
+    controlsEl.classList.toggle('open', open);
+    drawerBackdrop.classList.toggle('open', open);
+    drawerToggle.textContent = open ? '✕' : '☰';
+    drawerToggle.setAttribute('aria-label', open ? '설정 닫기' : '설정 열기');
+  }
+  function isMobile(){
+    return window.matchMedia('(max-width:900px)').matches;
+  }
+  function closeDrawerIfMobile(){
+    if(isMobile()) setDrawer(false);
+  }
+  drawerToggle.addEventListener('click', ()=> setDrawer(!controlsEl.classList.contains('open')));
+  drawerBackdrop.addEventListener('click', ()=> setDrawer(false));
+
+  // ---------- Tokenizer ----------
+  const WORD_RE = /[A-Za-zА-Яа-яЁёІіЇїЄєҐґ]+(?:[-''][A-Za-zА-Яа-яЁёІіЇїЄєҐґ]+)*/g;
+
+  function tokenizeParagraph(text){
+    const segments = [];
+    let lastIndex = 0;
+    let wordIndex = 0;
+    WORD_RE.lastIndex = 0;
+    let m;
+    while((m = WORD_RE.exec(text)) !== null){
+      if(m.index > lastIndex){
+        segments.push({type:'other', text:text.slice(lastIndex, m.index)});
+      }
+      segments.push({type:'word', text:m[0], charStart:m.index, charEnd:m.index+m[0].length, wordIndex:wordIndex});
+      wordIndex++;
+      lastIndex = m.index + m[0].length;
+    }
+    if(lastIndex < text.length){
+      segments.push({type:'other', text:text.slice(lastIndex)});
+    }
+    return {segments, wordCount:wordIndex};
+  }
+
+  function splitParagraphs(raw){
+    let parts = raw.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
+    if(parts.length <= 1){
+      parts = raw.split(/\n/).map(s=>s.trim()).filter(Boolean);
+    }
+    return parts;
+  }
+
+  function buildPagesFromParagraphs(paragraphs, timecodes){
+    state.pages = paragraphs.map((p, i) => {
+      const {segments, wordCount} = tokenizeParagraph(p);
+      return {
+        rawText: p,
+        segments,
+        wordCount,
+        selected: new Set(),
+        cache: new Map(),
+        paraTranslation: null,
+        userTranslations: [],
+        userDraft: '',
+        timecode: (timecodes && timecodes[i]) ? timecodes[i] : null
+      };
+    });
+    state.current = 0;
+    buildJumpSelect();
+    renderPage();
+    scheduleAutoSave();
+  }
+
+  function loadText(raw){
+    state.subtitleBaseName = null;
+    const paragraphs = splitParagraphs(raw);
+    buildPagesFromParagraphs(paragraphs);
+  }
+
+  // ---------- Subtitle (.srt/.vtt) parsing ----------
+  // supports both HH:MM:SS[,.]mmm and short MM:SS[,.]mmm (hours-omitted, valid in WebVTT)
+  const TIMECODE_RE = /(?:\d{1,2}:)?\d{2}:\d{2}[,.]\d{3}\s*-->\s*(?:\d{1,2}:)?\d{2}:\d{2}[,.]\d{3}.*/;
+  const TIMECODE_CAPTURE_RE = /((?:\d{1,2}:)?\d{2}:\d{2}[,.]\d{3})\s*-->\s*((?:\d{1,2}:)?\d{2}:\d{2}[,.]\d{3})/;
+  const CUE_INDEX_RE = /^\d+$/;
+
+  function normalizeTimeToSrt(t){
+    // dot to comma (ms separator), and pad to full HH:MM:SS,mmm
+    let norm = t.replace(/\.(\d{3})$/, ',$1');
+    const parts = norm.split(':');
+    if(parts.length === 2) parts.unshift('00');           // MM:SS,mmm -> 00:MM:SS,mmm
+    if(parts.length === 3 && parts[0].length === 1) parts[0] = '0'+parts[0];
+    return parts.join(':');
+  }
+
+  function parseSubtitleToParagraphs(raw){
+    const normalized = raw.replace(/\r\n?/g, '\n');
+    const blocks = normalized.split(/\n\s*\n/);
+    const paragraphs = [];
+    const timecodes = [];
+    for(const block of blocks){
+      const lines = block.split('\n').map(l=>l.trim());
+      const textLines = [];
+      let timecode = null;
+      for(const line of lines){
+        if(line === '') continue;
+        if(line.toUpperCase() === 'WEBVTT') continue;
+        if(/^NOTE\b/.test(line)) continue;
+        if(TIMECODE_RE.test(line)){
+          const m = TIMECODE_CAPTURE_RE.exec(line);
+          if(m) timecode = normalizeTimeToSrt(m[1])+' --> '+normalizeTimeToSrt(m[2]);
+          continue;
+        }
+        if(CUE_INDEX_RE.test(line)) continue;
+        // strip vtt cue settings / tags like <i>, </i>, {\an8}
+        const cleaned = line.replace(/<[^>]*>/g, '').replace(/\{[^}]*\}/g, '').trim();
+        if(cleaned) textLines.push(cleaned);
+      }
+      if(textLines.length){
+        // keep original per-line breaks (only collapse internal repeated spaces within each line)
+        const paragraph = textLines
+          .map(l => l.replace(/[ \t]+/g, ' ').trim())
+          .filter(Boolean)
+          .join('\n');
+        if(paragraph){
+          paragraphs.push(paragraph);
+          timecodes.push(timecode);
+        }
+      }
+    }
+    return {paragraphs, timecodes};
+  }
+
+  function baseNameWithoutExt(fileName){
+    return fileName.replace(/\.[^./\\]+$/, '');
+  }
+
+  function loadSubtitleFile(raw, fileName){
+    const {paragraphs, timecodes} = parseSubtitleToParagraphs(raw);
+    if(paragraphs.length === 0){
+      alert('자막에서 텍스트를 찾지 못했습니다. 파일 형식을 확인해주세요 (.srt / .vtt).');
+      return;
+    }
+    state.subtitleBaseName = fileName ? baseNameWithoutExt(fileName) : null;
+    buildPagesFromParagraphs(paragraphs, timecodes);
+  }
+
+  function buildJumpSelect(){
+    jumpSelect.innerHTML = '';
+    state.pages.forEach((p, i)=>{
+      const opt = document.createElement('option');
+      opt.value = i;
+      const preview = p.rawText.slice(0,20).replace(/\s+/g,' ');
+      opt.textContent = (i+1)+'. '+preview+(p.rawText.length>20?'…':'');
+      jumpSelect.appendChild(opt);
+    });
+  }
+
+  // ---------- Translation API ----------
+  const translateCacheGlobal = new Map(); // key: lang+':'+dict+':'+text -> promise/result
+
+  async function callGoogleTranslate(text, dict, targetLang){
+    const key = targetLang+':'+(dict?1:0)+':'+text;
+    if(translateCacheGlobal.has(key)) return translateCacheGlobal.get(key);
+    const params = new URLSearchParams();
+    params.set('client','gtx');
+    params.set('sl','ru');
+    params.set('tl', targetLang);
+    params.append('dt','t');
+    if(dict) params.append('dt','bd');
+    params.set('q', text);
+    const url = 'https://translate.googleapis.com/translate_a/single?'+params.toString();
+    const p = fetch(url).then(res=>{
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      return res.json();
+    });
+    translateCacheGlobal.set(key, p);
+    try{
+      return await p;
+    }catch(e){
+      translateCacheGlobal.delete(key);
+      throw e;
+    }
+  }
+
+  function parsePlainTranslation(data){
+    if(!data || !Array.isArray(data[0])) return '';
+    return data[0].map(seg => seg && seg[0] ? seg[0] : '').join('');
+  }
+
+  function parseDict(data){
+    if(!Array.isArray(data)) return null;
+    for(const el of data){
+      if(Array.isArray(el) && el.length){
+        const valid = el.every(item => Array.isArray(item) && typeof item[0]==='string' && Array.isArray(item[1]));
+        if(valid) return el.map(item => ({pos:item[0], terms:item[1]}));
+      }
+    }
+    return null;
+  }
+
+  async function translatePlain(text){
+    const data = await callGoogleTranslate(text, false, state.settings.targetLang);
+    return parsePlainTranslation(data);
+  }
+
+  async function translateWithDict(text){
+    const data = await callGoogleTranslate(text, true, state.settings.targetLang);
+    const plain = parsePlainTranslation(data);
+    const dict = parseDict(data);
+    return {plain, dict};
+  }
+
+  // ---------- Rendering ----------
+  function renderPage(){
+    if(state.pages.length === 0){
+      pageIndicator.textContent = '0 / 0';
+      return;
+    }
+    const page = state.pages[state.current];
+    pageIndicator.textContent = (state.current+1)+' / '+state.pages.length;
+    jumpSelect.value = state.current;
+
+    // render paragraph text
+    paraText.innerHTML = '';
+    paraText.classList.toggle('preserve-linebreaks', !!page.timecode);
+    page.segments.forEach(seg=>{
+      if(seg.type === 'word'){
+        const span = document.createElement('span');
+        span.className = 'token' + (page.selected.has(seg.wordIndex) ? ' selected' : '');
+        span.textContent = seg.text;
+        span.dataset.wordIndex = seg.wordIndex;
+        span.addEventListener('click', onTokenClick);
+        paraText.appendChild(span);
+      } else {
+        paraText.appendChild(document.createTextNode(seg.text));
+      }
+    });
+
+    renderNotifications();
+    renderParaTranslation();
+    userTranslationInput.value = page.userDraft || '';
+    renderSavedTranslations(page);
+    renderSubtitleMeta(page);
+  }
+
+  // Subtitle reading-speed / line-length guideline thresholds, based on the viewer reading
+  // the translated ("내 번역") text — Korean/translated text is denser to read per character
+  // than Russian, so thresholds are tighter than typical Latin-script defaults. Adjust freely.
+  function classifyCps(cps){
+    if(cps > 15) return 'danger';
+    if(cps > 12) return 'caution';
+    return 'ok';
+  }
+  function classifyLineLen(len){
+    if(len > 25) return 'danger';
+    if(len > 20) return 'caution';
+    return 'ok';
+  }
+
+  // Which text represents "내 번역" right now for this page: the in-progress draft takes
+  // priority (so stats update live while typing); otherwise the most recently saved entry.
+  function getUserTranslationForStats(page){
+    if(page.userDraft && page.userDraft.trim()) return page.userDraft;
+    if(page.userTranslations.length) return page.userTranslations[page.userTranslations.length-1];
+    return '';
+  }
+
+  function renderSubtitleMeta(page){
+    subtitleMeta.innerHTML = '';
+    if(!page.timecode){
+      subtitleMeta.style.display = 'none';
+      return;
+    }
+    subtitleMeta.style.display = 'block';
+
+    const info = computeSubtitleTiming(page.timecode);
+    const row1 = document.createElement('div');
+    row1.appendChild(document.createTextNode('⏱ '+page.timecode));
+    if(info){
+      row1.appendChild(document.createTextNode('  ·  길이 '+info.duration.toFixed(1)+'초'));
+    }
+    subtitleMeta.appendChild(row1);
+
+    const statsText = getUserTranslationForStats(page);
+    if(!statsText){
+      const row2 = document.createElement('div');
+      row2.textContent = '내 번역을 입력하면 글자수/자막 속도가 여기 표시됩니다.';
+      subtitleMeta.appendChild(row2);
+      return;
+    }
+
+    const lines = statsText.split('\n');
+    const totalLen = lines.reduce((sum,l)=>sum+l.length, 0);
+
+    if(info){
+      const cps = totalLen / info.duration;
+      const row2 = document.createElement('div');
+      row2.appendChild(document.createTextNode('내 번역 기준: '));
+      const cpsSpan = document.createElement('span');
+      cpsSpan.className = classifyCps(cps);
+      cpsSpan.textContent = cps.toFixed(1)+' 자/초';
+      row2.appendChild(cpsSpan);
+      subtitleMeta.appendChild(row2);
+    }
+
+    const row3 = document.createElement('div');
+    lines.forEach((line, i)=>{
+      if(i > 0) row3.appendChild(document.createTextNode('  ·  '));
+      row3.appendChild(document.createTextNode('줄'+(i+1)+' '));
+      const lenSpan = document.createElement('span');
+      lenSpan.className = classifyLineLen(line.length);
+      lenSpan.textContent = line.length+'자';
+      row3.appendChild(lenSpan);
+    });
+    row3.appendChild(document.createTextNode('  ·  총 '+totalLen+'자'));
+    subtitleMeta.appendChild(row3);
+  }
+
+  function timecodeToSeconds(t){
+    // expects HH:MM:SS,mmm
+    const m = /^(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})$/.exec(t.trim());
+    if(!m) return null;
+    return parseInt(m[1],10)*3600 + parseInt(m[2],10)*60 + parseInt(m[3],10) + parseInt(m[4],10)/1000;
+  }
+
+  function computeSubtitleTiming(timecode){
+    const m = /(.+?)\s*-->\s*(.+)/.exec(timecode);
+    if(!m) return null;
+    const start = timecodeToSeconds(m[1]);
+    const end = timecodeToSeconds(m[2]);
+    if(start===null || end===null) return null;
+    const duration = Math.max(0.001, end - start);
+    return {duration, cps: 0};
+  }
+
+  function renderSavedTranslations(page){
+    savedTranslationsList.innerHTML = '';
+    page.userTranslations.forEach((text, idx)=>{
+      const div = document.createElement('div');
+      div.className = 'saved-translation-item';
+      div.textContent = text;
+      const del = document.createElement('span');
+      del.className = 'del-x';
+      del.textContent = '✕';
+      del.title = '이 저장된 번역 삭제';
+      del.addEventListener('click', ()=>{
+        page.userTranslations.splice(idx, 1);
+        renderSavedTranslations(page);
+        renderSubtitleMeta(page);
+        scheduleAutoSave();
+      });
+      div.appendChild(del);
+      savedTranslationsList.appendChild(div);
+    });
+  }
+
+  function onTokenClick(e){
+    const page = state.pages[state.current];
+    const idx = parseInt(e.currentTarget.dataset.wordIndex, 10);
+    if(page.selected.has(idx)) page.selected.delete(idx);
+    else page.selected.add(idx);
+    e.currentTarget.classList.toggle('selected');
+    renderNotifications();
+    scheduleAutoSave();
+  }
+
+  function computeRuns(selectedArr){
+    const sorted = [...selectedArr].sort((a,b)=>a-b);
+    const runs = [];
+    let run = [];
+    for(let i=0;i<sorted.length;i++){
+      if(run.length===0 || sorted[i] === run[run.length-1]+1){
+        run.push(sorted[i]);
+      } else {
+        runs.push(run);
+        run = [sorted[i]];
+      }
+    }
+    if(run.length) runs.push(run);
+    return runs;
+  }
+
+  function getWordSegByIndex(page, wordIndex){
+    return page.segments.find(s=>s.type==='word' && s.wordIndex===wordIndex);
+  }
+
+  function runText(page, run){
+    const startSeg = getWordSegByIndex(page, run[0]);
+    const endSeg = getWordSegByIndex(page, run[run.length-1]);
+    return page.rawText.slice(startSeg.charStart, endSeg.charEnd);
+  }
+
+  async function renderNotifications(){
+    const page = state.pages[state.current];
+    const selectedArr = [...page.selected];
+    notifPanelDesktop.innerHTML = '';
+    notifPanelMobile.innerHTML = '';
+
+    if(selectedArr.length === 0) return;
+
+    if(selectedArr.length === 1){
+      const idx = selectedArr[0];
+      const seg = getWordSegByIndex(page, idx);
+      const cacheKey = 'single:'+idx+':'+state.settings.targetLang;
+      const block = createNotifBlock(seg.text, '불러오는 중...', idx);
+      appendNotif(block);
+      let result = page.cache.get(cacheKey);
+      if(!result){
+        try{
+          result = await translateWithDict(seg.text);
+          page.cache.set(cacheKey, result);
+        }catch(err){
+          updateNotifError(block, err);
+          return;
+        }
+      }
+      if(!page.selected.has(idx)) return; // deselected while loading
+      updateNotifSingle(block, result);
+      return;
+    }
+
+    const runs = computeRuns(selectedArr);
+    for(const run of runs){
+      const text = runText(page, run);
+      const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+state.settings.targetLang;
+      const block = createNotifBlock(text, '불러오는 중...', run);
+      appendNotif(block);
+      (async ()=>{
+        let translated = page.cache.get(runKey);
+        if(!translated){
+          try{
+            translated = await translatePlain(text);
+            page.cache.set(runKey, translated);
+          }catch(err){
+            updateNotifError(block, err);
+            return;
+          }
+        }
+        const stillValid = run.every(i=>page.selected.has(i));
+        if(!stillValid) return;
+        updateNotifPlain(block, translated);
+      })();
+    }
+  }
+
+  function appendNotif(block){
+    notifPanelDesktop.appendChild(block);
+    notifPanelMobile.appendChild(block.cloneNode(true));
+    // re-bind close on the clone
+    const clones = notifPanelMobile.querySelectorAll('.notif-block:last-child .close-x');
+    clones.forEach(x=>{
+      x.addEventListener('click', block._closeHandler);
+    });
+  }
+
+  function createNotifBlock(srcText, bodyText, refKey){
+    const div = document.createElement('div');
+    div.className = 'notif-block';
+    const src = document.createElement('div');
+    src.className = 'src';
+    src.textContent = srcText;
+    const body = document.createElement('div');
+    body.className = 'body';
+    body.textContent = bodyText;
+    const close = document.createElement('span');
+    close.className = 'close-x';
+    close.textContent = '✕';
+    const handler = ()=>{
+      const page = state.pages[state.current];
+      if(Array.isArray(refKey)){
+        refKey.forEach(i=>page.selected.delete(i));
+      } else {
+        page.selected.delete(refKey);
+      }
+      renderPage();
+    };
+    close.addEventListener('click', handler);
+    div._closeHandler = handler;
+    div._bodyEl = body;
+    div.appendChild(close);
+    div.appendChild(src);
+    div.appendChild(body);
+    return div;
+  }
+
+  function syncBothPanels(sourceBlock, updateFn){
+    updateFn(sourceBlock._bodyEl, sourceBlock);
+    // find matching clone in the other panel by src text + index among siblings
+    const parent = sourceBlock.parentElement;
+    const other = (parent === notifPanelDesktop) ? notifPanelMobile : notifPanelDesktop;
+    const idx = Array.from(parent.children).indexOf(sourceBlock);
+    const otherBlock = other.children[idx];
+    if(otherBlock){
+      const bodyEl = otherBlock.querySelector('.body');
+      if(bodyEl) updateFn(bodyEl, otherBlock);
+    }
+  }
+
+  function updateNotifSingle(block, result){
+    syncBothPanels(block, (bodyEl)=>{
+      bodyEl.innerHTML = '';
+      if(result.dict && result.dict.length){
+        result.dict.forEach(entry=>{
+          const line = document.createElement('div');
+          line.className = 'pos-line';
+          const label = document.createElement('span');
+          label.className = 'pos-label';
+          label.textContent = '['+entry.pos+']';
+          line.appendChild(label);
+          line.appendChild(document.createTextNode(entry.terms.join(', ')));
+          bodyEl.appendChild(line);
+        });
+      } else {
+        bodyEl.textContent = result.plain || '(번역 없음)';
+      }
+    });
+  }
+
+  function updateNotifPlain(block, text){
+    syncBothPanels(block, (bodyEl)=>{
+      bodyEl.textContent = text || '(번역 없음)';
+    });
+  }
+
+  function updateNotifError(block, err){
+    syncBothPanels(block, (bodyEl)=>{
+      bodyEl.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+      bodyEl.style.color = 'var(--danger)';
+    });
+  }
+
+  async function renderParaTranslation(){
+    const page = state.pages[state.current];
+    if(page.paraTranslation){
+      paraTranslation.textContent = page.paraTranslation;
+      return;
+    }
+    paraTranslation.textContent = '문단 번역 불러오는 중...';
+    try{
+      const t = await translatePlain(page.rawText);
+      page.paraTranslation = t;
+      if(state.pages[state.current] === page){
+        paraTranslation.textContent = t;
+      }
+      scheduleAutoSave();
+    }catch(err){
+      paraTranslation.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+    }
+  }
+
+  // ---------- Navigation ----------
+  prevPageBtn.addEventListener('click', ()=>{
+    if(state.current > 0){ state.current--; renderPage(); }
+  });
+  nextPageBtn.addEventListener('click', ()=>{
+    if(state.current < state.pages.length-1){ state.current++; renderPage(); }
+  });
+  jumpSelect.addEventListener('change', ()=>{
+    state.current = parseInt(jumpSelect.value, 10);
+    renderPage();
+    closeDrawerIfMobile();
+  });
+
+  // ---------- Controls: paste / load ----------
+  btnPaste.addEventListener('click', ()=>{
+    pasteArea.value = '';
+    pasteModal.classList.add('open');
+    closeDrawerIfMobile();
+  });
+  btnPasteCancel.addEventListener('click', ()=>{
+    pasteModal.classList.remove('open');
+  });
+  btnPasteApply.addEventListener('click', ()=>{
+    const text = pasteArea.value.trim();
+    if(text){ loadText(text); }
+    pasteModal.classList.remove('open');
+    closeDrawerIfMobile();
+  });
+  btnLoadFile.addEventListener('click', ()=> fileInput.click());
+  fileInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      loadText(reader.result);
+      closeDrawerIfMobile();
+    };
+    reader.readAsText(file, 'utf-8');
+    fileInput.value = '';
+  });
+  btnLoadSubtitle.addEventListener('click', ()=> subtitleInput.click());
+  subtitleInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      loadSubtitleFile(reader.result, file.name);
+      closeDrawerIfMobile();
+    };
+    reader.readAsText(file, 'utf-8');
+    subtitleInput.value = '';
+  });
+
+  // ---------- Controls: font / size / lang / dark ----------
+  ruFontSelect.addEventListener('change', ()=>{
+    state.settings.ruFont = ruFontSelect.value;
+    applySettingsToDOM(); saveSettings();
+  });
+  koFontSelect.addEventListener('change', ()=>{
+    state.settings.koFont = koFontSelect.value;
+    applySettingsToDOM(); saveSettings();
+  });
+  ruSizeRange.addEventListener('input', ()=>{
+    state.settings.ruSize = parseInt(ruSizeRange.value,10);
+    applySettingsToDOM(); saveSettings();
+  });
+  koSizeRange.addEventListener('input', ()=>{
+    state.settings.koSize = parseInt(koSizeRange.value,10);
+    applySettingsToDOM(); saveSettings();
+  });
+  targetLangSelect.addEventListener('change', ()=>{
+    state.settings.targetLang = targetLangSelect.value;
+    // invalidate cached translations since language changed
+    state.pages.forEach(p=>{ p.cache.clear(); p.paraTranslation = null; });
+    applySettingsToDOM(); saveSettings();
+    renderPage();
+  });
+  btnDark.addEventListener('click', ()=>{
+    state.settings.dark = !state.settings.dark;
+    applySettingsToDOM(); saveSettings();
+  });
+  btnClearSel.addEventListener('click', ()=>{
+    if(state.pages.length===0) return;
+    state.pages[state.current].selected.clear();
+    renderPage();
+  });
+  userTranslationInput.addEventListener('input', ()=>{
+    if(state.pages.length===0) return;
+    const page = state.pages[state.current];
+    page.userDraft = userTranslationInput.value;
+    renderSubtitleMeta(page);
+    scheduleAutoSave();
+  });
+  btnSaveTranslation.addEventListener('click', ()=>{
+    if(state.pages.length===0) return;
+    const page = state.pages[state.current];
+    const text = (page.userDraft || '').trim();
+    if(!text) return;
+    page.userTranslations.push(text);
+    page.userDraft = '';
+    userTranslationInput.value = '';
+    renderSavedTranslations(page);
+    renderSubtitleMeta(page);
+    scheduleAutoSave();
+  });
+  
+
+  // ---------- Export ----------
+  async function buildExportText(){
+    let out = '';
+    for(let i=0;i<state.pages.length;i++){
+      const page = state.pages[i];
+      out += '===== 문단 '+(i+1)+' =====\n';
+      out += '[원문]\n'+page.rawText+'\n\n';
+
+      if(state.exportOpts.tokens){
+        out += '[선택 단어/구 번역]\n';
+        if(page.selected.size === 0){
+          out += '(선택 없음)\n';
+        } else {
+          const selectedArr = [...page.selected];
+          if(selectedArr.length === 1){
+            const idx = selectedArr[0];
+            const seg = getWordSegByIndex(page, idx);
+            const cacheKey = 'single:'+idx+':'+state.settings.targetLang;
+            let result = page.cache.get(cacheKey);
+            if(!result){
+              try{ result = await translateWithDict(seg.text); page.cache.set(cacheKey, result); }
+              catch(e){ result = {plain:'(번역 실패)', dict:null}; }
+            }
+            out += seg.text+' => ';
+            if(result.dict && result.dict.length){
+              out += result.dict.map(d=>'['+d.pos+'] '+d.terms.join(', ')).join(' / ');
+            } else {
+              out += result.plain;
+            }
+            out += '\n';
+          } else {
+            const runs = computeRuns(selectedArr);
+            for(const run of runs){
+              const text = runText(page, run);
+              const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+state.settings.targetLang;
+              let translated = page.cache.get(runKey);
+              if(!translated){
+                try{ translated = await translatePlain(text); page.cache.set(runKey, translated); }
+                catch(e){ translated = '(번역 실패)'; }
+              }
+              out += text+' => '+translated+'\n';
+            }
+          }
+        }
+        out += '\n';
+      }
+
+      if(state.exportOpts.para){
+        out += '[문단 번역]\n';
+        if(!page.paraTranslation){
+          try{ page.paraTranslation = await translatePlain(page.rawText); }
+          catch(e){ page.paraTranslation = '(번역 실패)'; }
+        }
+        out += page.paraTranslation+'\n\n';
+      }
+
+      if(state.exportOpts.user){
+        out += '[내 번역]\n';
+        out += (page.userTranslations.length) ? page.userTranslations.join('\n') : '(입력 없음)';
+        out += '\n\n';
+      }
+    }
+    return out;
+  }
+
+  function buildSrtExport(){
+    const withTimecode = state.pages.filter(p => p.timecode);
+    if(withTimecode.length === 0) return null;
+    let out = '';
+    let idx = 1;
+    for(const page of state.pages){
+      if(!page.timecode) continue;
+      out += idx+'\n';
+      out += page.timecode+'\n';
+      out += page.rawText+'\n';
+      if(state.exportOpts.user && page.userTranslations.length){
+        out += page.userTranslations.join('\n')+'\n';
+      }
+      out += '\n';
+      idx++;
+    }
+    return out;
+  }
+
+  function srtTimecodeToVtt(tc){
+    // "00:00:01,000 --> 00:00:03,500" -> dot separator for VTT
+    return tc.replace(/,(\d{3})/g, '.$1');
+  }
+
+  function buildVttExport(){
+    const withTimecode = state.pages.filter(p => p.timecode);
+    if(withTimecode.length === 0) return null;
+    let out = 'WEBVTT\n\n';
+    let idx = 1;
+    for(const page of state.pages){
+      if(!page.timecode) continue;
+      out += idx+'\n';
+      out += srtTimecodeToVtt(page.timecode)+'\n';
+      out += page.rawText+'\n';
+      if(state.exportOpts.user && page.userTranslations.length){
+        out += page.userTranslations.join('\n')+'\n';
+      }
+      out += '\n';
+      idx++;
+    }
+    return out;
+  }
+
+  function setBtnLabel(btn, text){
+    const label = btn.querySelector('.btn-label');
+    if(label) label.textContent = text; else btn.textContent = text;
+  }
+
+  async function doExportTxt(){
+    if(state.pages.length===0) return;
+    btnExportTxt.disabled = true;
+    setBtnLabel(btnExportTxt, '내보내는 중...');
+    try{
+      const text = await buildExportText();
+      const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'russian-reading-export.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      btnExportTxt.disabled = false;
+      setBtnLabel(btnExportTxt, 'TXT 다운로드');
+    }
+  }
+
+  async function doExportClipboard(){
+    if(state.pages.length===0) return;
+    btnExportClipboard.disabled = true;
+    setBtnLabel(btnExportClipboard, '복사 준비 중...');
+    try{
+      const text = await buildExportText();
+      await navigator.clipboard.writeText(text);
+      setBtnLabel(btnExportClipboard, '복사됨!');
+      setTimeout(()=>{ setBtnLabel(btnExportClipboard, '클립보드 복사'); btnExportClipboard.disabled=false; }, 1500);
+    } catch(e){
+      setBtnLabel(btnExportClipboard, '복사 실패');
+      setTimeout(()=>{ setBtnLabel(btnExportClipboard, '클립보드 복사'); btnExportClipboard.disabled=false; }, 1500);
+    }
+  }
+
+  function subtitleExportFileName(ext){
+    const base = state.subtitleBaseName || 'russian-translated';
+    return base+'_edited.'+ext;
+  }
+
+  function doExportSrt(){
+    if(state.pages.length===0) return;
+    const srtText = buildSrtExport();
+    if(!srtText){
+      alert('자막(.srt/.vtt) 파일로 불러온 경우에만 SRT로 내보낼 수 있습니다.');
+      return;
+    }
+    const blob = new Blob([srtText], {type:'application/x-subrip;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = subtitleExportFileName('srt');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function doExportVtt(){
+    if(state.pages.length===0) return;
+    const vttText = buildVttExport();
+    if(!vttText){
+      alert('자막(.srt/.vtt) 파일로 불러온 경우에만 VTT로 내보낼 수 있습니다.');
+      return;
+    }
+    const blob = new Blob([vttText], {type:'text/vtt;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = subtitleExportFileName('vtt');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- Export options popup ----------
+  let pendingExportAction = null;
+  const EXPORT_ACTION_META = {
+    txt: {title:'TXT로 내보내기', note:'문단마다 선택한 항목을 순서대로 포함해 텍스트 파일로 만듭니다.', showAll:true},
+    clipboard: {title:'클립보드로 복사', note:'문단마다 선택한 항목을 순서대로 포함해 클립보드에 복사합니다.', showAll:true},
+    srt: {title:'SRT로 내보내기', note:'자막 파일에는 원문 아래 "내 번역"만 추가됩니다 (문단 번역/토큰 번역은 자막에 포함되지 않습니다).', showAll:false},
+    vtt: {title:'VTT로 내보내기', note:'자막 파일에는 원문 아래 "내 번역"만 추가됩니다 (문단 번역/토큰 번역은 자막에 포함되지 않습니다).', showAll:false}
+  };
+
+  function openExportOptsModal(action){
+    if(state.pages.length===0) return;
+    pendingExportAction = action;
+    const meta = EXPORT_ACTION_META[action];
+    exportOptsTitle.textContent = meta.title;
+    exportOptsNote.textContent = meta.note;
+    optExportPara.checked = state.exportOpts.para;
+    optExportUser.checked = state.exportOpts.user;
+    optExportTokens.checked = state.exportOpts.tokens;
+    optExportParaLabel.style.display = meta.showAll ? 'flex' : 'none';
+    optExportTokensLabel.style.display = meta.showAll ? 'flex' : 'none';
+    exportOptsModal.classList.add('open');
+  }
+
+  btnExportTxt.addEventListener('click', ()=> openExportOptsModal('txt'));
+  btnExportClipboard.addEventListener('click', ()=> openExportOptsModal('clipboard'));
+  btnExportSrt.addEventListener('click', ()=> openExportOptsModal('srt'));
+  btnExportVtt.addEventListener('click', ()=> openExportOptsModal('vtt'));
+
+  btnExportOptsCancel.addEventListener('click', ()=>{
+    exportOptsModal.classList.remove('open');
+    pendingExportAction = null;
+  });
+
+  btnExportOptsConfirm.addEventListener('click', async ()=>{
+    state.exportOpts.para = optExportPara.checked;
+    state.exportOpts.user = optExportUser.checked;
+    state.exportOpts.tokens = optExportTokens.checked;
+    exportOptsModal.classList.remove('open');
+    const action = pendingExportAction;
+    pendingExportAction = null;
+    scheduleAutoSave();
+    if(action === 'txt') await doExportTxt();
+    else if(action === 'clipboard') await doExportClipboard();
+    else if(action === 'srt') doExportSrt();
+    else if(action === 'vtt') doExportVtt();
+  });
+
+  // ---------- Mid-save (progress persistence) ----------
+  const PROGRESS_KEY = 'ru-reader-progress-v1';
+  let autoSaveTimer = null;
+
+
+  function scheduleAutoSave(){
+    if(autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(()=>{ saveProgressToStorage(false); }, 900);
+  }
+
+  function serializeProgress(){
+    return {
+      current: state.current,
+      settings: state.settings,
+      exportOpts: state.exportOpts,
+      subtitleBaseName: state.subtitleBaseName,
+      pages: state.pages.map(p => ({
+        rawText: p.rawText,
+        selected: [...p.selected],
+        paraTranslation: p.paraTranslation,
+        userTranslations: p.userTranslations,
+        userDraft: p.userDraft,
+        timecode: p.timecode
+      })),
+      savedAt: Date.now()
+    };
+  }
+
+  function formatSavedTime(ts){
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2,'0');
+    return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+
+  function saveProgressToStorage(manual){
+    if(state.pages.length === 0) return;
+    try{
+      const data = serializeProgress();
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
+      saveStatusLabel.textContent = (manual ? '저장됨: ' : '자동 저장: ')+formatSavedTime(data.savedAt);
+    }catch(e){
+      saveStatusLabel.textContent = '저장 실패 (저장 공간 부족일 수 있음)';
+    }
+  }
+
+  function restoreProgressFromStorage(){
+    let raw;
+    try{ raw = localStorage.getItem(PROGRESS_KEY); }catch(e){ return; }
+    if(!raw) return;
+    let data;
+    try{ data = JSON.parse(raw); }catch(e){ return; }
+    if(!data || !Array.isArray(data.pages) || data.pages.length === 0) return;
+    const when = data.savedAt ? formatSavedTime(data.savedAt) : '알 수 없음';
+    const ok = confirm('이전에 저장된 작업 내용이 있습니다 ('+when+' 저장, 문단 '+data.pages.length+'개).\n불러올까요?\n(취소하면 새로 시작합니다)');
+    if(!ok) return;
+    state.pages = data.pages.map(sp => {
+      const {segments, wordCount} = tokenizeParagraph(sp.rawText);
+      return {
+        rawText: sp.rawText,
+        segments, wordCount,
+        selected: new Set(sp.selected || []),
+        cache: new Map(),
+        paraTranslation: sp.paraTranslation || null,
+        userTranslations: sp.userTranslations || [],
+        userDraft: sp.userDraft || '',
+        timecode: sp.timecode || null
+      };
+    });
+    state.current = Math.min(data.current || 0, state.pages.length-1);
+    if(data.settings) Object.assign(state.settings, data.settings);
+    if(data.exportOpts) Object.assign(state.exportOpts, data.exportOpts);
+    state.subtitleBaseName = data.subtitleBaseName || null;
+    buildJumpSelect();
+    applySettingsToDOM();
+    renderPage();
+    saveStatusLabel.textContent = '불러옴: '+when;
+  }
+
+  btnSaveProgress.addEventListener('click', ()=>{
+    saveProgressToStorage(true);
+  });
+  btnClearProgress.addEventListener('click', ()=>{
+    if(!confirm('저장된 중간 저장 데이터를 삭제할까요? (현재 화면 내용은 유지됩니다)')) return;
+    try{ localStorage.removeItem(PROGRESS_KEY); }catch(e){}
+    saveStatusLabel.textContent = '자동 저장: 아직 없음';
+  });
+  window.addEventListener('beforeunload', ()=>{
+    if(state.pages.length) saveProgressToStorage(false);
+  });
+
+  // ---------- Init ----------
+  loadSettings();
+  applySettingsToDOM();
+  restoreProgressFromStorage();
+})();
+</script>
+</body>
+</html>

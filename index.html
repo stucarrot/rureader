@@ -175,18 +175,41 @@
     background:var(--bg-alt);
     border:1px solid var(--border);
     border-radius:8px;
-    padding:8px 28px 8px 10px;
+    padding:8px 52px 8px 10px;
     position:relative;
     margin-bottom:6px;
   }
   .pinned-word{font-family:var(--ru-font);font-weight:700;font-size:14px;}
   .pinned-meaning{font-family:var(--ko-font);font-size:12px;color:var(--muted);margin-top:2px;}
+  .pinned-item .edit-x{
+    position:absolute;top:6px;right:26px;
+    cursor:pointer;color:var(--muted);
+    font-size:12px;
+  }
+  .pinned-item .edit-x:hover{color:var(--accent);}
   .pinned-item .del-x{
     position:absolute;top:6px;right:8px;
     cursor:pointer;color:var(--muted);
     font-size:12px;
   }
   .pinned-item .del-x:hover{color:var(--danger);}
+  .pinned-edit-form{
+    display:none;
+    flex-direction:column;
+    gap:6px;
+    margin-top:6px;
+  }
+  .pinned-edit-input{
+    width:100%;
+    font-size:12px;
+    padding:5px 7px;
+    border-radius:5px;
+    border:1px solid var(--border);
+    font-family:var(--ko-font);
+    resize:vertical;
+    min-height:32px;
+    box-sizing:border-box;
+  }
   .user-translation-block{
     border-top:1px dashed var(--border);
     padding-top:10px;
@@ -273,6 +296,14 @@
     cursor:pointer;color:var(--muted);
     font-size:12px;
   }
+  .notif-block .openrus-btn{
+    position:absolute;top:2px;right:24px;
+    text-decoration:none;
+    font-size:13px;
+    line-height:1;
+    opacity:.75;
+  }
+  .notif-block .openrus-btn:hover{opacity:1;}
   #notifPanelMobile{display:none;}
   .side-right{
     grid-area:right;
@@ -1639,14 +1670,62 @@
       state.pinnedTokens.forEach(item=>{
         const div = document.createElement('div');
         div.className = 'pinned-item';
+
+        const displayWrap = document.createElement('div');
         const word = document.createElement('div');
         word.className = 'pinned-word';
         word.textContent = item.word;
         const meaning = document.createElement('div');
         meaning.className = 'pinned-meaning';
         meaning.textContent = item.meaning;
-        div.appendChild(word);
-        div.appendChild(meaning);
+        displayWrap.appendChild(word);
+        displayWrap.appendChild(meaning);
+        div.appendChild(displayWrap);
+
+        const editWrap = document.createElement('div');
+        editWrap.className = 'pinned-edit-form';
+        function fieldRow(labelText, value){
+          const wrapper = document.createElement('div');
+          const label = document.createElement('label');
+          label.className = 'small-note';
+          label.textContent = labelText;
+          const input = document.createElement('textarea');
+          input.className = 'pinned-edit-input';
+          input.value = value;
+          wrapper.appendChild(label);
+          wrapper.appendChild(input);
+          editWrap.appendChild(wrapper);
+          return input;
+        }
+        const wordInput = fieldRow('단어', item.word);
+        const meaningInput = fieldRow('뜻', item.meaning);
+        const sentenceInput = fieldRow('예문', item.sentence);
+        const sentenceTransInput = fieldRow('예문 뜻', item.sentenceTranslation);
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'compact-btn primary';
+        saveBtn.textContent = '저장';
+        saveBtn.addEventListener('click', ()=>{
+          item.word = wordInput.value.trim() || item.word;
+          item.meaning = meaningInput.value.trim();
+          item.sentence = sentenceInput.value.trim();
+          item.sentenceTranslation = sentenceTransInput.value.trim();
+          renderPinnedTokens();
+          scheduleAutoSave();
+        });
+        editWrap.appendChild(saveBtn);
+        div.appendChild(editWrap);
+
+        const edit = document.createElement('span');
+        edit.className = 'edit-x';
+        edit.textContent = '✎';
+        edit.title = '이 항목 수정 (단어/뜻/예문)';
+        edit.addEventListener('click', ()=>{
+          const isEditing = div.classList.toggle('editing');
+          displayWrap.style.display = isEditing ? 'none' : '';
+          editWrap.style.display = isEditing ? 'flex' : 'none';
+        });
+        div.appendChild(edit);
+
         const del = document.createElement('span');
         del.className = 'del-x';
         del.textContent = '✕';
@@ -1729,6 +1808,18 @@
     });
   }
 
+  function makeOpenRussianLink(word){
+    const a = document.createElement('a');
+    a.className = 'openrus-btn';
+    a.href = 'https://en.openrussian.org/?search=' + encodeURIComponent(word);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = '📖';
+    a.title = 'OpenRussian 사전에서 검색';
+    a.setAttribute('aria-label', 'OpenRussian 사전에서 검색');
+    return a;
+  }
+
   function createNotifBlock(srcText, bodyText, refKey){
     const div = document.createElement('div');
     div.className = 'notif-block';
@@ -1754,6 +1845,7 @@
     div._closeHandler = handler;
     div._bodyEl = body;
     div.appendChild(close);
+    div.appendChild(makeOpenRussianLink(srcText));
     div.appendChild(src);
     div.appendChild(body);
     return div;
@@ -1904,6 +1996,7 @@
         rerenderExpandedBlock(pageIdx);
       });
       div.appendChild(close);
+      div.appendChild(makeOpenRussianLink(srcText));
       div.appendChild(src);
       div.appendChild(body);
       container.appendChild(div);

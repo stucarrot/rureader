@@ -56,6 +56,7 @@
   }
   button:hover{border-color:var(--accent);}
   button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  button:disabled{opacity:.5;cursor:default;}
   select,input[type=range],input[type=text],textarea{
     font-family:inherit;
     background:var(--bg-alt);
@@ -102,6 +103,16 @@
     margin:0 auto;
     width:100%;
   }
+  .view-toggle-row{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:8px;
+  }
+  .compact-btn{
+    padding:4px 9px;
+    font-size:12px;
+    border-radius:5px;
+  }
   .page-wrap{flex:1;}
   .paragraph-block{display:flex;flex-direction:column;gap:14px;}
   .para-text{
@@ -113,14 +124,69 @@
   .token{cursor:pointer;padding:0 1px;border-radius:3px;}
   .token:hover{background:var(--bg-alt);}
   .token.selected{background:var(--accent);color:#fff;}
-  .para-translation{
+  .para-translation-slots{
+    border-top:1px dashed var(--border);
+    padding-top:10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .para-translation-slot{
     font-family:var(--ko-font);
     font-size:var(--ko-size);
     color:var(--muted);
-    border-top:1px dashed var(--border);
-    padding-top:10px;
     min-height:1.4em;
   }
+  .para-translation-slot-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--accent2);
+    margin-bottom:3px;
+    font-weight:700;
+  }
+  .slot-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .slot-row select{flex:1;min-width:0;}
+  .slot-del-btn{padding:4px 8px;font-size:12px;flex-shrink:0;}
+  .retry-btn{
+    padding:2px 7px;
+    font-size:12px;
+    margin-left:6px;
+    border-radius:5px;
+    vertical-align:middle;
+  }
+  .pin-btn{
+    display:inline-block;
+    margin-top:6px;
+    padding:2px 7px;
+    font-size:12px;
+    border-radius:5px;
+    background:transparent;
+    border:1px solid var(--border);
+    cursor:pointer;
+  }
+  .pin-btn:hover{border-color:var(--accent);}
+  .pin-btn:disabled{opacity:.6;cursor:default;}
+  .pinned-item{
+    background:var(--bg-alt);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 28px 8px 10px;
+    position:relative;
+    margin-bottom:6px;
+  }
+  .pinned-word{font-family:var(--ru-font);font-weight:700;font-size:14px;}
+  .pinned-meaning{font-family:var(--ko-font);font-size:12px;color:var(--muted);margin-top:2px;}
+  .pinned-item .del-x{
+    position:absolute;top:6px;right:8px;
+    cursor:pointer;color:var(--muted);
+    font-size:12px;
+  }
+  .pinned-item .del-x:hover{color:var(--danger);}
   .user-translation-block{
     border-top:1px dashed var(--border);
     padding-top:10px;
@@ -145,13 +211,25 @@
     background:var(--bg-alt);
     border:1px solid var(--border);
     border-radius:8px;
-    padding:8px 28px 8px 10px;
+    padding:8px 52px 8px 10px;
     font-family:var(--ko-font);
     font-size:var(--ko-size);
     position:relative;
     line-height:1.6;
     white-space:pre-wrap;
   }
+  .saved-translation-text[contenteditable="true"]{
+    outline:1px dashed var(--accent);
+    border-radius:4px;
+    padding:2px 4px;
+    margin:-2px -4px;
+  }
+  .saved-translation-item .edit-x{
+    position:absolute;top:6px;right:26px;
+    cursor:pointer;color:var(--muted);
+    font-size:12px;
+  }
+  .saved-translation-item .edit-x:hover{color:var(--accent);}
   .saved-translation-item .del-x{
     position:absolute;top:6px;right:8px;
     cursor:pointer;color:var(--muted);
@@ -204,17 +282,53 @@
     max-height:100vh;
     position:sticky;
     top:0;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
   }
+  .side-right hr{border:none;border-top:1px solid var(--border);width:100%;margin:0;}
+  .task-list{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .task-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:6px;
+    padding:7px 8px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .task-item:hover{border-color:var(--accent);}
+  .task-item.active{border-color:var(--accent);background:var(--bg-alt);font-weight:700;}
+  .task-item.active .task-item-label{color:var(--accent);}
+  .task-item-rename-input{
+    flex:1;
+    font-size:13px;
+    padding:2px 4px;
+    min-width:0;
+  }
+  .task-item-label{
+    flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .task-item-del{color:var(--muted);font-size:11px;cursor:pointer;padding:2px 5px;}
+  .task-item-del:hover{color:var(--danger);}
   .page-nav{
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:14px;
-    padding:16px 0;
-    border-top:1px solid var(--border);
-    margin-top:16px;
+    gap:10px;
+    padding:0 46px 10px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:10px;
   }
-  #pageIndicator{font-size:13px;color:var(--muted);}
+  .page-nav button{padding:5px 9px;font-size:12px;}
+  #pageIndicator{font-size:12px;color:var(--muted);}
   textarea#pasteArea{width:100%;min-height:150px;font-family:var(--ru-font);}
   .modal-overlay{
     display:none;
@@ -242,10 +356,10 @@
     position:fixed;
     top:12px;left:12px;
     z-index:60;
-    width:40px;height:40px;
+    width:34px;height:34px;
     border-radius:6px;
     align-items:center;justify-content:center;
-    font-size:17px;
+    font-size:15px;
     background:var(--bg-alt);
     border:1px solid var(--border);
     box-shadow:none;
@@ -259,12 +373,66 @@
     z-index:45;
   }
   #drawerBackdrop.open{display:block;}
+  #rightDrawerToggle{
+    display:none;
+    position:fixed;
+    top:12px;right:12px;
+    z-index:60;
+    width:34px;height:34px;
+    border-radius:6px;
+    align-items:center;justify-content:center;
+    font-size:15px;
+    background:var(--bg-alt);
+    border:1px solid var(--border);
+    box-shadow:none;
+    padding:0;
+  }
+  #rightDrawerToggle:hover{border-color:var(--accent);}
+  #taskDrawerBackdrop{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.45);
+    z-index:45;
+  }
+  #taskDrawerBackdrop.open{display:block;}
+  #taskDrawer{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    position:fixed;
+    top:0;right:0;bottom:0;
+    width:82%;
+    max-width:300px;
+    background:var(--bg);
+    border-left:1px solid var(--border);
+    padding:70px 14px 24px;
+    z-index:50;
+    transform:translateX(105%);
+    transition:transform .25s ease;
+    box-shadow:-2px 0 14px rgba(0,0,0,.22);
+    overflow-y:auto;
+  }
+  #taskDrawer.open{transform:translateX(0);}
+  .exp-block{
+    border-bottom:1px solid var(--border);
+    padding:16px 0;
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .exp-block:first-child{padding-top:0;}
+  .exp-num{
+    font-size:12px;
+    color:var(--accent);
+    cursor:pointer;
+    font-weight:700;
+  }
+  .exp-num:hover{text-decoration:underline;}
   @media (max-width:900px){
     .layout{
       grid-template-columns:1fr;
       grid-template-areas:"main";
     }
     #drawerToggle{display:flex;}
+    #rightDrawerToggle{display:flex;}
     #controls{
       grid-area:unset;
       position:fixed;
@@ -288,16 +456,35 @@
     .ctrl-group{min-width:0;width:100%;}
     .side-right{display:none;}
     #notifPanelMobile{display:flex;flex-direction:column;gap:8px;}
-    .main-col{padding:64px 14px 24px;}
+    .main-col{padding:58px 14px 24px;}
     .btn-label{display:none;}
     button{padding:9px 11px;font-size:16px;}
+    .compact-btn{padding:6px 9px;font-size:13px;}
     .ctrl-row select, .ctrl-row input[type=range]{font-size:14px;}
+    .page-nav{
+      position:fixed;
+      top:12px;
+      left:54px;
+      right:54px;
+      z-index:55;
+      height:34px;
+      margin:0;
+      padding:0 8px;
+      border:1px solid var(--border);
+      border-radius:6px;
+      background:var(--bg-alt);
+      box-shadow:none;
+    }
+    .page-nav button{padding:4px 6px;font-size:12px;}
+    #pageIndicator{font-size:11px;white-space:nowrap;}
   }
 </style>
 </head>
 <body>
-<button id="drawerToggle" aria-label="설정 열기" title="설정">☰</button>
+<button id="drawerToggle" aria-label="설정 열기" title="설정">›</button>
 <div id="drawerBackdrop"></div>
+<button id="rightDrawerToggle" aria-label="작업 목록 열기" title="작업 목록">‹</button>
+<div id="taskDrawerBackdrop"></div>
 <div class="layout" id="layout">
   <aside id="controls">
     <div class="ctrl-group">
@@ -309,7 +496,18 @@
         <button id="btnLoadSubtitle" title="자막 파일 불러오기 (.srt/.vtt)" aria-label="자막 파일 불러오기"><span class="icon">🎬</span><span class="btn-label">자막 불러오기</span></button>
         <input type="file" id="subtitleInput" accept=".srt,.vtt,.txt" style="display:none;">
       </div>
-      <div class="small-note">자막 파일은 타임코드 1개 = 문단 1개로 자동 변환됩니다.</div>
+      <div class="ctrl-row">
+        <button id="btnLoadHighlights" title="독서기 하이라이트 파일 불러오기" aria-label="하이라이트 불러오기"><span class="icon">🖍</span><span class="btn-label">하이라이트 가져오기</span></button>
+        <input type="file" id="highlightsInput" accept=".txt,.md" style="display:none;">
+        <button id="btnLoadWebArticle" title="웹페이지 본문 가져오기" aria-label="웹 문서 가져오기"><span class="icon">🌐</span><span class="btn-label">웹 문서 가져오기</span></button>
+      </div>
+      <div class="small-note">자막 파일은 타임코드 1개 = 문단 1개로 자동 변환됩니다. 불러올 때마다 새 작업이 작업 목록에 추가됩니다.</div>
+    </div>
+    <div class="ctrl-group">
+      <h4>보기</h4>
+      <div class="ctrl-row">
+        <button id="btnToggleExpand" title="전체 문단을 펼쳐서 훑어보기" aria-label="펼쳐보기 전환"><span class="btn-label">전체 펼치기</span></button>
+      </div>
     </div>
     <div class="ctrl-group">
       <h4>이동</h4>
@@ -341,14 +539,19 @@
       </div>
     </div>
     <div class="ctrl-group">
-      <h4>번역 대상 언어</h4>
+      <h4>원문 언어</h4>
       <div class="ctrl-row">
-        <select id="targetLangSelect">
-          <option value="ko">한국어</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
-        </select>
+        <select id="sourceLangSelect" disabled></select>
       </div>
+      <div class="small-note">현재 작업(문서)의 원문 언어입니다. 자동 감지도 선택할 수 있습니다.</div>
+    </div>
+    <div class="ctrl-group">
+      <h4>번역 슬롯 (문단 번역)</h4>
+      <div id="translationSlotsList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      <div class="ctrl-row">
+        <button id="btnAddSlot" class="compact-btn" title="번역 슬롯 추가" aria-label="번역 슬롯 추가">+ 슬롯 추가</button>
+      </div>
+      <div class="small-note">이 설정은 현재 작업(문서)별로 저장됩니다. 선택 단어/구 번역은 항상 한국어로 표시됩니다.</div>
     </div>
     <div class="ctrl-group">
       <h4>화면</h4>
@@ -372,43 +575,75 @@
         <button id="btnExportSrt" title="SRT로 내보내기 (자막으로 불러온 경우)" aria-label="SRT로 내보내기"><span class="icon">🎞️</span><span class="btn-label">SRT 내보내기</span></button>
         <button id="btnExportVtt" title="VTT로 내보내기 (자막으로 불러온 경우)" aria-label="VTT로 내보내기"><span class="icon">🎬</span><span class="btn-label">VTT 내보내기</span></button>
       </div>
-      <div class="small-note">아래 각 문단의 "내보내기 항목" 체크박스로 무엇을 포함할지 고를 수 있습니다.</div>
+      <div class="small-note">내보내기 버튼을 누르면 포함할 항목을 고를 수 있습니다. 파일 이름은 작업 제목을 따릅니다.</div>
     </div>
   </aside>
 
   <main class="main-col">
-    <div class="page-wrap">
+    <div class="page-nav" id="pageNav">
+      <button id="prevPage" title="이전 문단" aria-label="이전 문단"><span class="icon">◀</span><span class="btn-label">이전 문단</span></button>
+      <span id="pageIndicator">0 / 0</span>
+      <button id="nextPage" title="다음 문단" aria-label="다음 문단"><span class="btn-label">다음 문단</span><span class="icon">▶</span></button>
+    </div>
+    <div class="view-toggle-row">
+      <button id="btnToggleExpandMain" class="compact-btn" title="전체 문단을 펼쳐서 훑어보기" aria-label="펼쳐보기 전환">전체 펼치기</button>
+    </div>
+    <div class="page-wrap" id="pageWrapSingle">
       <div class="paragraph-block">
         <div class="para-text" id="paraText">
-          <p class="small-note">상단 ☰ 버튼(데스크톱은 좌측 패널)의 "붙여넣기" 또는 "파일 불러오기"로 러시아어 글을 입력하세요.</p>
+          <p class="small-note">좌측 패널(모바일은 › 버튼)의 "붙여넣기", "파일 불러오기" 또는 "자막 불러오기"로 러시아어 글을 입력하세요. 불러올 때마다 작업 목록에 새 작업이 추가됩니다.</p>
         </div>
         <div class="subtitle-meta" id="subtitleMeta" style="display:none;"></div>
         <div class="notif-panel" id="notifPanelMobile"></div>
-        <div class="para-translation" id="paraTranslation"></div>
+        <div class="para-translation-slots" id="paraTranslationSlots"></div>
         <div class="user-translation-block">
           <label for="userTranslationInput" class="small-note">내 번역 (직접 입력 후 저장하면 아래에 쌓입니다)</label>
           <textarea id="userTranslationInput" class="user-translation-input" placeholder="이 문단에 대한 나만의 번역을 적어보세요"></textarea>
           <div class="ctrl-row" style="justify-content:flex-end;">
-            <button id="btnSaveTranslation" class="primary" title="이 번역 저장" aria-label="이 번역 저장"><span class="icon">➕</span><span class="btn-label">번역 저장</span></button>
+            <button id="btnSaveTranslation" class="primary compact-btn" title="이 번역 저장" aria-label="이 번역 저장">+<span class="btn-label"> 번역 저장</span></button>
           </div>
           <div class="saved-translations" id="savedTranslationsList"></div>
         </div>
       </div>
     </div>
-    <div class="page-nav">
-      <button id="prevPage" title="이전 문단" aria-label="이전 문단"><span class="icon">◀</span><span class="btn-label">이전 문단</span></button>
-      <span id="pageIndicator">0 / 0</span>
-      <button id="nextPage" title="다음 문단" aria-label="다음 문단"><span class="btn-label">다음 문단</span><span class="icon">▶</span></button>
-    </div>
+    <div class="page-wrap" id="pageWrapExpanded" style="display:none;"></div>
   </main>
 
   <aside class="side-right">
-    <div class="flex-between">
-      <h3 style="font-size:14px;">선택한 단어 / 구 번역</h3>
-      <button id="btnClearSel" style="font-size:11px;" title="전체 해제" aria-label="선택 전체 해제"><span class="icon">✕</span><span class="btn-label">전체 해제</span></button>
+    <div>
+      <div class="flex-between">
+        <h3 style="font-size:14px;">작업 목록</h3>
+      </div>
+      <div class="task-list" id="taskListDesktop"></div>
     </div>
-    <div class="notif-panel" id="notifPanelDesktop"></div>
+    <hr>
+    <div>
+      <div class="flex-between">
+        <h3 style="font-size:14px;">선택한 단어 / 구 번역</h3>
+        <button id="btnClearSel" style="font-size:11px;" title="전체 해제" aria-label="선택 전체 해제"><span class="icon">✕</span><span class="btn-label">전체 해제</span></button>
+      </div>
+      <div class="notif-panel" id="notifPanelDesktop"></div>
+    </div>
+    <hr>
+    <div>
+      <div class="flex-between">
+        <h3 style="font-size:14px;">고정된 단어 (Anki 내보내기)</h3>
+        <button id="btnExportApkg" style="font-size:11px;" title="Anki 카드(.apkg)로 내보내기" aria-label="Anki로 내보내기" disabled>📤 .apkg</button>
+      </div>
+      <div id="pinnedTokensList"></div>
+    </div>
   </aside>
+</div>
+
+<div id="taskDrawer">
+  <h3 style="font-size:14px;margin:0;">작업 목록</h3>
+  <div class="task-list" id="taskListMobile"></div>
+  <hr>
+  <div class="flex-between">
+    <h3 style="font-size:14px;margin:0;">고정된 단어 (Anki 내보내기)</h3>
+    <button id="btnExportApkgMobile" style="font-size:11px;" title="Anki 카드(.apkg)로 내보내기" aria-label="Anki로 내보내기" disabled>📤 .apkg</button>
+  </div>
+  <div id="pinnedTokensListMobile"></div>
 </div>
 
 <div class="modal-overlay" id="pasteModal">
@@ -418,6 +653,24 @@
     <div class="ctrl-row" style="justify-content:flex-end;">
       <button id="btnPasteCancel">취소</button>
       <button id="btnPasteApply" class="primary">적용</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="webArticleModal">
+  <div class="modal">
+    <h3>웹 문서 가져오기</h3>
+    <div class="small-note">뉴스/블로그 등의 URL을 입력하면 본문만 자동으로 추출합니다. 사이트가 직접 접속을 막는 경우(CORS), 아래에 페이지 소스(Ctrl+U 또는 "페이지 소스 보기")를 복사해 붙여넣으면 같은 방식으로 추출됩니다.</div>
+    <div class="ctrl-row">
+      <input type="text" id="webArticleUrlInput" placeholder="https://example.com/article" style="flex:1;">
+      <button id="btnWebArticleFetch" class="compact-btn">URL로 가져오기</button>
+    </div>
+    <div class="small-note" id="webArticleStatus"></div>
+    <label for="webArticleHtmlInput" class="small-note">또는: 페이지 소스(HTML) 붙여넣기</label>
+    <textarea id="webArticleHtmlInput" placeholder="여기에 페이지 소스(HTML)를 붙여넣으세요..." style="min-height:120px;"></textarea>
+    <div class="ctrl-row" style="justify-content:flex-end;">
+      <button id="btnWebArticleCancel">취소</button>
+      <button id="btnWebArticleExtract" class="primary">본문 추출해서 불러오기</button>
     </div>
   </div>
 </div>
@@ -443,20 +696,78 @@
   "use strict";
 
   // ---------- State ----------
+  // Multi-document model: each "task" is a document with its own pages/current/exportOpts/
+  // subtitleBaseName. `state.pages`, `state.current`, `state.exportOpts`, `state.subtitleBaseName`
+  // and `state.docTitle` are defined below as getters/setters proxying to the active document,
+  // so the rest of the app (rendering, translation, export, autosave) can keep reading/writing
+  // them exactly as before without needing to know about the document list.
   const state = {
-    pages: [],           // {rawText, segments:[{type:'word'|'other', text, charStart, charEnd, wordIndex}], wordCount, selected:Set, cache:Map(runKey->result), paraTranslation:null}
-    current: 0,
-    exportOpts: {para:true, user:true, tokens:true}, // shared across export actions, chosen via popup at export time
-    subtitleBaseName: null, // original subtitle filename (without extension), used to name SRT/VTT exports
+    docs: [],            // [{id, title, pages, current, exportOpts, subtitleBaseName, translationSlots, sourceLang}]
+    activeDocId: null,
+    expanded: false,      // "전체 펼치기" overview mode
+    pinnedTokens: [],     // [{id, word, meaning, sentence, sentenceTranslation}] — global, for Anki export
     settings: {
       ruFont: "'PT Serif', serif",
       koFont: "'Noto Sans KR', sans-serif",
       ruSize: 20,
       koSize: 16,
-      dark: false,
-      targetLang: 'ko'
+      dark: false
     }
   };
+
+  // Language options offered for paragraph-translation slots.
+  const LANG_OPTIONS = [
+    {value:'ko', label:'한국어'},
+    {value:'en', label:'English'},
+    {value:'ja', label:'日本語'}
+  ];
+  // Language options offered for the source (original) text of a document.
+  const SOURCE_LANG_OPTIONS = [
+    {value:'auto', label:'자동 감지'},
+    {value:'ru', label:'러시아어'},
+    {value:'uk', label:'우크라이나어'},
+    {value:'en', label:'영어'},
+    {value:'de', label:'독일어'},
+    {value:'fr', label:'프랑스어'},
+    {value:'es', label:'스페인어'},
+    {value:'ja', label:'일본어'},
+    {value:'zh-CN', label:'중국어'}
+  ];
+  function sourceLangLabel(lang){
+    const opt = SOURCE_LANG_OPTIONS.find(o=>o.value===lang);
+    return opt ? opt.label : lang;
+  }
+  function slotLangLabel(lang){
+    const opt = LANG_OPTIONS.find(o=>o.value===lang);
+    return opt ? opt.label : lang;
+  }
+  // Selected word/phrase ("토큰") translation is intentionally always Korean, independent
+  // of the paragraph-translation slots below.
+  const TOKEN_LANG = 'ko';
+
+  function getActiveDoc(){
+    return state.docs.find(d => d.id === state.activeDocId) || null;
+  }
+
+  Object.defineProperty(state, 'pages', {
+    get(){ const d = getActiveDoc(); return d ? d.pages : []; },
+    set(v){ const d = getActiveDoc(); if(d) d.pages = v; }
+  });
+  Object.defineProperty(state, 'current', {
+    get(){ const d = getActiveDoc(); return d ? d.current : 0; },
+    set(v){ const d = getActiveDoc(); if(d) d.current = v; }
+  });
+  Object.defineProperty(state, 'exportOpts', {
+    get(){ const d = getActiveDoc(); return d ? d.exportOpts : {para:true, user:true, tokens:true}; }
+  });
+  Object.defineProperty(state, 'subtitleBaseName', {
+    get(){ const d = getActiveDoc(); return d ? d.subtitleBaseName : null; },
+    set(v){ const d = getActiveDoc(); if(d) d.subtitleBaseName = v; }
+  });
+  Object.defineProperty(state, 'docTitle', {
+    get(){ const d = getActiveDoc(); return d ? d.title : ''; },
+    set(v){ const d = getActiveDoc(); if(d) d.title = v; }
+  });
 
   const LS_KEY = 'ru-reader-settings-v1';
 
@@ -483,14 +794,20 @@
     koFontSelect.value = state.settings.koFont;
     ruSizeRange.value = state.settings.ruSize;
     koSizeRange.value = state.settings.koSize;
-    targetLangSelect.value = state.settings.targetLang;
   }
 
   // ---------- DOM refs ----------
   const paraText = document.getElementById('paraText');
-  const paraTranslation = document.getElementById('paraTranslation');
+  const paraTranslationSlots = document.getElementById('paraTranslationSlots');
+  const translationSlotsList = document.getElementById('translationSlotsList');
+  const btnAddSlot = document.getElementById('btnAddSlot');
+  const sourceLangSelect = document.getElementById('sourceLangSelect');
   const notifPanelDesktop = document.getElementById('notifPanelDesktop');
   const notifPanelMobile = document.getElementById('notifPanelMobile');
+  const pinnedTokensList = document.getElementById('pinnedTokensList');
+  const pinnedTokensListMobile = document.getElementById('pinnedTokensListMobile');
+  const btnExportApkg = document.getElementById('btnExportApkg');
+  const btnExportApkgMobile = document.getElementById('btnExportApkgMobile');
   const pageIndicator = document.getElementById('pageIndicator');
   const jumpSelect = document.getElementById('jumpSelect');
   const prevPageBtn = document.getElementById('prevPage');
@@ -499,12 +816,21 @@
   const koFontSelect = document.getElementById('koFontSelect');
   const ruSizeRange = document.getElementById('ruSizeRange');
   const koSizeRange = document.getElementById('koSizeRange');
-  const targetLangSelect = document.getElementById('targetLangSelect');
   const btnDark = document.getElementById('btnDark');
   const btnPaste = document.getElementById('btnPaste');
   const btnLoadFile = document.getElementById('btnLoadFile');
   const fileInput = document.getElementById('fileInput');
   const btnLoadSubtitle = document.getElementById('btnLoadSubtitle');
+  const btnLoadHighlights = document.getElementById('btnLoadHighlights');
+  const highlightsInput = document.getElementById('highlightsInput');
+  const btnLoadWebArticle = document.getElementById('btnLoadWebArticle');
+  const webArticleModal = document.getElementById('webArticleModal');
+  const webArticleUrlInput = document.getElementById('webArticleUrlInput');
+  const btnWebArticleFetch = document.getElementById('btnWebArticleFetch');
+  const webArticleStatus = document.getElementById('webArticleStatus');
+  const webArticleHtmlInput = document.getElementById('webArticleHtmlInput');
+  const btnWebArticleCancel = document.getElementById('btnWebArticleCancel');
+  const btnWebArticleExtract = document.getElementById('btnWebArticleExtract');
   const subtitleInput = document.getElementById('subtitleInput');
   const userTranslationInput = document.getElementById('userTranslationInput');
   const btnSaveTranslation = document.getElementById('btnSaveTranslation');
@@ -536,11 +862,21 @@
   const drawerToggle = document.getElementById('drawerToggle');
   const drawerBackdrop = document.getElementById('drawerBackdrop');
   const controlsEl = document.getElementById('controls');
+  const rightDrawerToggle = document.getElementById('rightDrawerToggle');
+  const taskDrawerBackdrop = document.getElementById('taskDrawerBackdrop');
+  const taskDrawerEl = document.getElementById('taskDrawer');
+  const taskListDesktop = document.getElementById('taskListDesktop');
+  const taskListMobile = document.getElementById('taskListMobile');
+  const btnToggleExpand = document.getElementById('btnToggleExpand');
+  const btnToggleExpandMain = document.getElementById('btnToggleExpandMain');
+  const pageWrapSingle = document.getElementById('pageWrapSingle');
+  const pageWrapExpanded = document.getElementById('pageWrapExpanded');
+  const pageNav = document.getElementById('pageNav');
 
   function setDrawer(open){
     controlsEl.classList.toggle('open', open);
     drawerBackdrop.classList.toggle('open', open);
-    drawerToggle.textContent = open ? '✕' : '☰';
+    drawerToggle.textContent = open ? '‹' : '›';
     drawerToggle.setAttribute('aria-label', open ? '설정 닫기' : '설정 열기');
   }
   function isMobile(){
@@ -551,6 +887,18 @@
   }
   drawerToggle.addEventListener('click', ()=> setDrawer(!controlsEl.classList.contains('open')));
   drawerBackdrop.addEventListener('click', ()=> setDrawer(false));
+
+  function setTaskDrawer(open){
+    taskDrawerEl.classList.toggle('open', open);
+    taskDrawerBackdrop.classList.toggle('open', open);
+    rightDrawerToggle.textContent = open ? '›' : '‹';
+    rightDrawerToggle.setAttribute('aria-label', open ? '작업 목록 닫기' : '작업 목록 열기');
+  }
+  function closeTaskDrawerIfMobile(){
+    if(isMobile()) setTaskDrawer(false);
+  }
+  rightDrawerToggle.addEventListener('click', ()=> setTaskDrawer(!taskDrawerEl.classList.contains('open')));
+  taskDrawerBackdrop.addEventListener('click', ()=> setTaskDrawer(false));
 
   // ---------- Tokenizer ----------
   const WORD_RE = /[A-Za-zА-Яа-яЁёІіЇїЄєҐґ]+(?:[-''][A-Za-zА-Яа-яЁёІіЇїЄєҐґ]+)*/g;
@@ -583,8 +931,20 @@
     return parts;
   }
 
-  function buildPagesFromParagraphs(paragraphs, timecodes){
-    state.pages = paragraphs.map((p, i) => {
+  // ---------- Document (task) management ----------
+  let docIdCounter = 0;
+  function genDocId(){
+    return 'doc_'+Date.now()+'_'+(docIdCounter++);
+  }
+
+  let pasteTitleCounter = 0;
+  function defaultPasteTitle(){
+    pasteTitleCounter++;
+    return '붙여넣은 글 '+pasteTitleCounter;
+  }
+
+  function buildPagesForDoc(paragraphs, timecodes){
+    return paragraphs.map((p, i) => {
       const {segments, wordCount} = tokenizeParagraph(p);
       return {
         rawText: p,
@@ -592,22 +952,235 @@
         wordCount,
         selected: new Set(),
         cache: new Map(),
-        paraTranslation: null,
+        paraTranslations: {}, // slotId -> translated text | null (in progress) — cached, mid-saved
         userTranslations: [],
         userDraft: '',
         timecode: (timecodes && timecodes[i]) ? timecodes[i] : null
       };
     });
-    state.current = 0;
+  }
+
+  let slotIdCounter = 0;
+  function genSlotId(){
+    return 'slot_'+Date.now()+'_'+(slotIdCounter++);
+  }
+  function defaultTranslationSlots(){
+    return [{id: genSlotId(), lang:'ko'}];
+  }
+
+  function createDoc(title, paragraphs, timecodes, subtitleBaseName){
+    return {
+      id: genDocId(),
+      title: title,
+      pages: buildPagesForDoc(paragraphs, timecodes),
+      current: 0,
+      exportOpts: {para:true, user:true, tokens:true},
+      subtitleBaseName: subtitleBaseName || null,
+      translationSlots: defaultTranslationSlots(), // per-document; each {id, lang}
+      sourceLang: 'ru' // per-document source (original text) language; 'auto' = auto-detect
+    };
+  }
+
+  function addDocAndActivate(doc){
+    state.docs.push(doc);
+    state.activeDocId = doc.id;
     buildJumpSelect();
-    renderPage();
+    renderTaskLists();
+    renderTranslationSlotsUI();
+    if(state.expanded) renderExpandedView(); else renderPage();
     scheduleAutoSave();
   }
 
-  function loadText(raw){
-    state.subtitleBaseName = null;
+  function switchToDoc(id){
+    if(id === state.activeDocId){
+      closeDrawerIfMobile();
+      closeTaskDrawerIfMobile();
+      return;
+    }
+    const target = state.docs.find(d=>d.id===id);
+    if(!target) return;
+    state.activeDocId = id;
+    buildJumpSelect();
+    renderTaskLists();
+    renderTranslationSlotsUI();
+    if(state.expanded) renderExpandedView(); else renderPage();
+    scheduleAutoSave();
+    closeDrawerIfMobile();
+    closeTaskDrawerIfMobile();
+  }
+
+  function deleteDoc(id){
+    const idx = state.docs.findIndex(d=>d.id===id);
+    if(idx === -1) return;
+    const wasActive = (id === state.activeDocId);
+    state.docs.splice(idx, 1);
+    if(wasActive){
+      if(state.docs.length){
+        const nextIdx = Math.min(idx, state.docs.length-1);
+        state.activeDocId = state.docs[nextIdx].id;
+      } else {
+        state.activeDocId = null;
+      }
+    }
+    buildJumpSelect();
+    renderTaskLists();
+    renderTranslationSlotsUI();
+    if(state.expanded) renderExpandedView(); else renderPage();
+    scheduleAutoSave();
+  }
+
+  function renameDoc(doc, newTitle){
+    if(!doc) return;
+    const trimmed = (newTitle || '').trim();
+    doc.title = trimmed || doc.title;
+    renderTaskLists();
+    scheduleAutoSave();
+  }
+
+  function renameActiveDoc(newTitle){
+    renameDoc(getActiveDoc(), newTitle);
+  }
+
+  function renderTaskLists(){
+    [taskListDesktop, taskListMobile].forEach(container=>{
+      if(!container) return;
+      container.innerHTML = '';
+      if(state.docs.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'small-note';
+        empty.textContent = '아직 작업이 없습니다. "글 불러오기"로 글이나 자막을 추가하세요.';
+        container.appendChild(empty);
+        return;
+      }
+      state.docs.forEach(doc=>{
+        const isActive = doc.id === state.activeDocId;
+        const item = document.createElement('div');
+        item.className = 'task-item' + (isActive ? ' active' : '');
+        const label = document.createElement('span');
+        label.className = 'task-item-label';
+        label.textContent = (isActive ? '▶ ' : '') + (doc.title || '(제목 없음)');
+        label.title = '더블클릭하면 이름을 수정할 수 있습니다';
+        item.addEventListener('click', ()=> switchToDoc(doc.id));
+        label.addEventListener('dblclick', (e)=>{
+          e.stopPropagation();
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'task-item-rename-input';
+          input.value = doc.title || '';
+          label.replaceWith(input);
+          input.focus();
+          input.select();
+          const commit = ()=>{
+            renameDoc(doc, input.value);
+          };
+          input.addEventListener('blur', commit);
+          input.addEventListener('keydown', (ke)=>{
+            if(ke.key === 'Enter') input.blur();
+            if(ke.key === 'Escape'){ input.value = doc.title; input.blur(); }
+          });
+          input.addEventListener('click', (ce)=> ce.stopPropagation());
+        });
+        const del = document.createElement('span');
+        del.className = 'task-item-del';
+        del.textContent = '✕';
+        del.title = '이 작업 삭제';
+        del.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          if(!confirm('"'+(doc.title || '제목 없음')+'" 작업을 목록에서 삭제할까요?')) return;
+          deleteDoc(doc.id);
+        });
+        item.appendChild(label);
+        item.appendChild(del);
+        container.appendChild(item);
+      });
+    });
+  }
+
+  function loadText(raw, titleHint){
     const paragraphs = splitParagraphs(raw);
-    buildPagesFromParagraphs(paragraphs);
+    if(paragraphs.length === 0) return;
+    const title = titleHint || defaultPasteTitle();
+    const doc = createDoc(title, paragraphs, null, null);
+    addDocAndActivate(doc);
+  }
+
+  // ---------- E-reader highlight export import (Boox Neo and similar) ----------
+  // These exports vary a lot by device/app, so this is a best-effort heuristic: it
+  // splits on common separators (a line of repeated =/-/*/· characters, or blank lines)
+  // and then strips bullet markers, surrounding quotes, and metadata-looking lines
+  // (dates, "위치/location/page", etc.), keeping just the highlighted sentence text.
+  function parseHighlightExport(raw){
+    const normalized = raw.replace(/\r\n?/g, '\n');
+    const SEP_LINE_RE = /^[ \t]*[=\-_*·•]{3,}[ \t]*$/;
+    const hasSepLines = normalized.split('\n').some(l => SEP_LINE_RE.test(l));
+    const blocks = hasSepLines
+      ? normalized.split(/\n[ \t]*[=\-_*·•]{3,}[ \t]*\n/)
+      : normalized.split(/\n[ \t]*\n+/);
+
+    const METADATA_LINE_RE = /^(-{0,2}\s*)?(your highlight|your note|highlight\b|note\b|위치|location|page\b|loc\.?\s*\d|added on|added\b|\d{4}[-./]\d{1,2}[-./]\d{1,2}|[가-힣]{0,4}\s*페이지|[가-힣]{0,4}\s*위치|ваша (заметка|отметка|цитата|выделени)|добавлен|страниц|местоположени|позици)/i;
+
+    const results = [];
+    for(const block of blocks){
+      const lines = block.split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 0)
+        .filter(l => !SEP_LINE_RE.test(l) && !METADATA_LINE_RE.test(l));
+      if(lines.length === 0) continue;
+      let text = lines.join(' ');
+      text = text.replace(/^[•▪\-*>\s"“'`]+/, '').replace(/["”'`\s]+$/, '').trim();
+      if(text.length < 2) continue;
+      results.push(text);
+    }
+    return results;
+  }
+
+  function loadHighlights(raw, titleHint){
+    const items = parseHighlightExport(raw);
+    if(items.length === 0){
+      alert('하이라이트를 인식하지 못했습니다. 파일 형식이 다를 수 있습니다.');
+      return;
+    }
+    const doc = createDoc(titleHint || '하이라이트 모음', items, null, null);
+    addDocAndActivate(doc);
+  }
+
+  // ---------- Web article extraction (simple client-side "readability") ----------
+  function textOf(el){
+    return (el.textContent || '').replace(/[ \t\u00a0]+/g, ' ').replace(/\n{2,}/g, '\n').trim();
+  }
+
+  function extractArticleFromHtml(html){
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    parsed.querySelectorAll('script,style,noscript,nav,header,footer,aside,form,iframe,svg,button,input,select').forEach(el=>el.remove());
+
+    let candidates = Array.from(parsed.querySelectorAll(
+      'article, main, [role="main"], .article, .post, .entry-content, .article-body, #content, .content'
+    ));
+    if(candidates.length === 0) candidates = Array.from(parsed.querySelectorAll('div, section'));
+
+    function score(el){
+      const text = textOf(el);
+      const linkText = Array.from(el.querySelectorAll('a')).reduce((s,a)=> s + textOf(a).length, 0);
+      const pCount = el.querySelectorAll('p').length;
+      return (text.length - linkText) + pCount * 20;
+    }
+
+    let best = null, bestScore = -Infinity;
+    candidates.forEach(el=>{
+      const s = score(el);
+      if(s > bestScore){ bestScore = s; best = el; }
+    });
+    if(!best) best = parsed.body;
+
+    const paragraphs = Array.from(best.querySelectorAll('p'))
+      .map(p => textOf(p))
+      .filter(t => t.length > 25);
+
+    const titleEl = parsed.querySelector('title');
+    const h1El = parsed.querySelector('h1');
+    const title = (titleEl && textOf(titleEl)) || (h1El && textOf(h1El)) || '';
+
+    return {title, paragraphs};
   }
 
   // ---------- Subtitle (.srt/.vtt) parsing ----------
@@ -673,8 +1246,9 @@
       alert('자막에서 텍스트를 찾지 못했습니다. 파일 형식을 확인해주세요 (.srt / .vtt).');
       return;
     }
-    state.subtitleBaseName = fileName ? baseNameWithoutExt(fileName) : null;
-    buildPagesFromParagraphs(paragraphs, timecodes);
+    const base = fileName ? baseNameWithoutExt(fileName) : '자막';
+    const doc = createDoc(base, paragraphs, timecodes, base);
+    addDocAndActivate(doc);
   }
 
   function buildJumpSelect(){
@@ -691,12 +1265,13 @@
   // ---------- Translation API ----------
   const translateCacheGlobal = new Map(); // key: lang+':'+dict+':'+text -> promise/result
 
-  async function callGoogleTranslate(text, dict, targetLang){
-    const key = targetLang+':'+(dict?1:0)+':'+text;
+  async function callGoogleTranslate(text, dict, targetLang, sourceLang){
+    const sl = sourceLang || 'auto';
+    const key = sl+':'+targetLang+':'+(dict?1:0)+':'+text;
     if(translateCacheGlobal.has(key)) return translateCacheGlobal.get(key);
     const params = new URLSearchParams();
     params.set('client','gtx');
-    params.set('sl','ru');
+    params.set('sl', sl);
     params.set('tl', targetLang);
     params.append('dt','t');
     if(dict) params.append('dt','bd');
@@ -720,30 +1295,46 @@
     return data[0].map(seg => seg && seg[0] ? seg[0] : '').join('');
   }
 
+  // Google's unofficial dt=bd payload nests the part-of-speech dictionary somewhere in `data`
+  // as an array of [posTag, [term, term, ...], ...maybeMoreStuff] tuples, but not every item in
+  // that array is guaranteed to match this shape (some trailing entries can be malformed/extra).
+  // Filter per-item rather than requiring the whole array to be uniform, so a single bad item
+  // doesn't hide the entire (valid) dictionary.
   function parseDict(data){
     if(!Array.isArray(data)) return null;
     for(const el of data){
-      if(Array.isArray(el) && el.length){
-        const valid = el.every(item => Array.isArray(item) && typeof item[0]==='string' && Array.isArray(item[1]));
-        if(valid) return el.map(item => ({pos:item[0], terms:item[1]}));
-      }
+      if(!Array.isArray(el) || !el.length) continue;
+      const entries = el
+        .filter(item => Array.isArray(item) && typeof item[0]==='string' &&
+          Array.isArray(item[1]) && item[1].length && typeof item[1][0]==='string')
+        .map(item => ({pos:item[0], terms:item[1]}));
+      if(entries.length) return entries;
     }
     return null;
   }
 
-  async function translatePlain(text){
-    const data = await callGoogleTranslate(text, false, state.settings.targetLang);
+  // Returns the source (original-text) language configured for the active document,
+  // or 'auto' for automatic detection.
+  function getSourceLang(){
+    const d = getActiveDoc();
+    return (d && d.sourceLang) ? d.sourceLang : 'auto';
+  }
+
+  async function translatePlain(text, lang, sourceLang){
+    const data = await callGoogleTranslate(text, false, lang, sourceLang !== undefined ? sourceLang : getSourceLang());
     return parsePlainTranslation(data);
   }
 
-  async function translateWithDict(text){
-    const data = await callGoogleTranslate(text, true, state.settings.targetLang);
+  // Selected word/phrase translation is always Korean (TOKEN_LANG), regardless of the
+  // paragraph-translation slots configured for the current document.
+  async function translateWithDict(text, sourceLang){
+    const data = await callGoogleTranslate(text, true, TOKEN_LANG, sourceLang !== undefined ? sourceLang : getSourceLang());
     const plain = parsePlainTranslation(data);
     const dict = parseDict(data);
     return {plain, dict};
   }
 
-  // ---------- Rendering ----------
+  // ---------- Rendering (single-page mode) ----------
   function renderPage(){
     if(state.pages.length === 0){
       pageIndicator.textContent = '0 / 0';
@@ -770,10 +1361,10 @@
     });
 
     renderNotifications();
-    renderParaTranslation();
+    renderParaTranslationSlots();
     userTranslationInput.value = page.userDraft || '';
-    renderSavedTranslations(page);
-    renderSubtitleMeta(page);
+    renderSavedTranslations(page, savedTranslationsList, ()=> renderSubtitleMeta(page, subtitleMeta));
+    renderSubtitleMeta(page, subtitleMeta);
   }
 
   // Subtitle reading-speed / line-length guideline thresholds, based on the viewer reading
@@ -798,13 +1389,13 @@
     return '';
   }
 
-  function renderSubtitleMeta(page){
-    subtitleMeta.innerHTML = '';
+  function renderSubtitleMeta(page, targetEl){
+    targetEl.innerHTML = '';
     if(!page.timecode){
-      subtitleMeta.style.display = 'none';
+      targetEl.style.display = 'none';
       return;
     }
-    subtitleMeta.style.display = 'block';
+    targetEl.style.display = 'block';
 
     const info = computeSubtitleTiming(page.timecode);
     const row1 = document.createElement('div');
@@ -812,13 +1403,13 @@
     if(info){
       row1.appendChild(document.createTextNode('  ·  길이 '+info.duration.toFixed(1)+'초'));
     }
-    subtitleMeta.appendChild(row1);
+    targetEl.appendChild(row1);
 
     const statsText = getUserTranslationForStats(page);
     if(!statsText){
       const row2 = document.createElement('div');
       row2.textContent = '내 번역을 입력하면 글자수/자막 속도가 여기 표시됩니다.';
-      subtitleMeta.appendChild(row2);
+      targetEl.appendChild(row2);
       return;
     }
 
@@ -833,7 +1424,7 @@
       cpsSpan.className = classifyCps(cps);
       cpsSpan.textContent = cps.toFixed(1)+' 자/초';
       row2.appendChild(cpsSpan);
-      subtitleMeta.appendChild(row2);
+      targetEl.appendChild(row2);
     }
 
     const row3 = document.createElement('div');
@@ -846,7 +1437,7 @@
       row3.appendChild(lenSpan);
     });
     row3.appendChild(document.createTextNode('  ·  총 '+totalLen+'자'));
-    subtitleMeta.appendChild(row3);
+    targetEl.appendChild(row3);
   }
 
   function timecodeToSeconds(t){
@@ -866,24 +1457,68 @@
     return {duration, cps: 0};
   }
 
-  function renderSavedTranslations(page){
-    savedTranslationsList.innerHTML = '';
+  function renderSavedTranslations(page, listEl, onChange){
+    listEl.innerHTML = '';
     page.userTranslations.forEach((text, idx)=>{
       const div = document.createElement('div');
       div.className = 'saved-translation-item';
-      div.textContent = text;
+      const textEl = document.createElement('div');
+      textEl.className = 'saved-translation-text';
+      textEl.textContent = text;
+      div.appendChild(textEl);
+
+      function commitEdit(){
+        const newText = textEl.textContent.trim();
+        page.userTranslations[idx] = newText || text;
+        textEl.textContent = page.userTranslations[idx];
+        textEl.contentEditable = 'false';
+        div.classList.remove('editing');
+        edit.textContent = '✎';
+        edit.title = '이 번역 수정';
+        if(onChange) onChange();
+        scheduleAutoSave();
+      }
+      function startEdit(){
+        textEl.contentEditable = 'true';
+        div.classList.add('editing');
+        edit.textContent = '✓';
+        edit.title = '수정 완료';
+        textEl.focus();
+        const range = document.createRange();
+        range.selectNodeContents(textEl);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+
+      const edit = document.createElement('span');
+      edit.className = 'edit-x';
+      edit.textContent = '✎';
+      edit.title = '이 번역 수정';
+      edit.addEventListener('click', ()=>{
+        if(div.classList.contains('editing')) commitEdit(); else startEdit();
+      });
+      textEl.addEventListener('blur', ()=>{
+        if(div.classList.contains('editing')) commitEdit();
+      });
+      textEl.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); textEl.blur(); }
+      });
+      div.appendChild(edit);
+
       const del = document.createElement('span');
       del.className = 'del-x';
       del.textContent = '✕';
       del.title = '이 저장된 번역 삭제';
       del.addEventListener('click', ()=>{
         page.userTranslations.splice(idx, 1);
-        renderSavedTranslations(page);
-        renderSubtitleMeta(page);
+        renderSavedTranslations(page, listEl, onChange);
+        if(onChange) onChange();
         scheduleAutoSave();
       });
       div.appendChild(del);
-      savedTranslationsList.appendChild(div);
+      listEl.appendChild(div);
     });
   }
 
@@ -923,6 +1558,112 @@
     return page.rawText.slice(startSeg.charStart, endSeg.charEnd);
   }
 
+  // ---------- Small reusable UI helpers: retry (on failure) and pin (for Anki export) ----------
+  function makeRetryBtn(onClick){
+    const btn = document.createElement('button');
+    btn.className = 'retry-btn';
+    btn.textContent = '⟳';
+    btn.title = '다시 시도';
+    btn.setAttribute('aria-label', '다시 시도');
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  function formatTokenMeaning(result){
+    if(result.dict && result.dict.length){
+      return result.dict.map(d=>'['+d.pos+'] '+d.terms.join(', ')).join(' / ');
+    }
+    return result.plain || '';
+  }
+
+  // Finds the sentence/line containing [charStart, charEnd) within rawText, using
+  // sentence-ending punctuation or line breaks as boundaries (works for both normal
+  // prose and subtitle text where each dialogue line is its own "sentence").
+  function extractSentenceAround(rawText, charStart, charEnd){
+    const enders = /[.!?…\n]/;
+    let start = charStart;
+    while(start > 0 && !enders.test(rawText[start-1])) start--;
+    let end = charEnd;
+    while(end < rawText.length && !enders.test(rawText[end])) end++;
+    if(end < rawText.length) end++; // include the punctuation itself
+    return rawText.slice(start, end).trim();
+  }
+
+  let pinIdCounter = 0;
+  function genPinId(){ return 'pin_'+Date.now()+'_'+(pinIdCounter++); }
+
+  function addPinnedToken(word, meaning, sentence, sentenceTranslation){
+    state.pinnedTokens.push({id: genPinId(), word, meaning, sentence, sentenceTranslation});
+    renderPinnedTokens();
+    scheduleAutoSave();
+  }
+
+  function makePinBtn(word, meaning, page, charStart, charEnd){
+    const btn = document.createElement('button');
+    btn.className = 'pin-btn';
+    btn.textContent = '📌';
+    btn.title = '이 단어/구 고정 (Anki 내보내기용)';
+    btn.setAttribute('aria-label', '단어 고정');
+    btn.addEventListener('click', async ()=>{
+      btn.disabled = true;
+      try{
+        const sentence = extractSentenceAround(page.rawText, charStart, charEnd);
+        const sentCacheKey = 'pin-sentence:'+charStart+'-'+charEnd;
+        let sentenceTranslation = page.cache.get(sentCacheKey);
+        if(!sentenceTranslation){
+          sentenceTranslation = await translatePlain(sentence, TOKEN_LANG);
+          page.cache.set(sentCacheKey, sentenceTranslation);
+        }
+        addPinnedToken(word, meaning, sentence, sentenceTranslation);
+        btn.textContent = '✓';
+      }catch(e){
+        btn.disabled = false;
+        btn.textContent = '📌';
+        alert('고정 중 오류가 발생했습니다 (네트워크 문제일 수 있음).');
+      }
+    });
+    return btn;
+  }
+
+  function renderPinnedTokens(){
+    const containers = [pinnedTokensList, pinnedTokensListMobile].filter(Boolean);
+    containers.forEach(container=>{
+      container.innerHTML = '';
+      if(state.pinnedTokens.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'small-note';
+        empty.textContent = '고정된 단어가 없습니다. 번역 팝업의 📌 버튼으로 추가하세요.';
+        container.appendChild(empty);
+        return;
+      }
+      state.pinnedTokens.forEach(item=>{
+        const div = document.createElement('div');
+        div.className = 'pinned-item';
+        const word = document.createElement('div');
+        word.className = 'pinned-word';
+        word.textContent = item.word;
+        const meaning = document.createElement('div');
+        meaning.className = 'pinned-meaning';
+        meaning.textContent = item.meaning;
+        div.appendChild(word);
+        div.appendChild(meaning);
+        const del = document.createElement('span');
+        del.className = 'del-x';
+        del.textContent = '✕';
+        del.title = '고정 해제';
+        del.addEventListener('click', ()=>{
+          state.pinnedTokens = state.pinnedTokens.filter(p=>p.id!==item.id);
+          renderPinnedTokens();
+          scheduleAutoSave();
+        });
+        div.appendChild(del);
+        container.appendChild(div);
+      });
+    });
+    if(btnExportApkg) btnExportApkg.disabled = state.pinnedTokens.length === 0;
+    if(btnExportApkgMobile) btnExportApkgMobile.disabled = state.pinnedTokens.length === 0;
+  }
+
   async function renderNotifications(){
     const page = state.pages[state.current];
     const selectedArr = [...page.selected];
@@ -934,7 +1675,7 @@
     if(selectedArr.length === 1){
       const idx = selectedArr[0];
       const seg = getWordSegByIndex(page, idx);
-      const cacheKey = 'single:'+idx+':'+state.settings.targetLang;
+      const cacheKey = 'single:'+idx+':'+TOKEN_LANG;
       const block = createNotifBlock(seg.text, '불러오는 중...', idx);
       appendNotif(block);
       let result = page.cache.get(cacheKey);
@@ -943,35 +1684,37 @@
           result = await translateWithDict(seg.text);
           page.cache.set(cacheKey, result);
         }catch(err){
-          updateNotifError(block, err);
+          updateNotifError(block, err, ()=> renderNotifications());
           return;
         }
       }
       if(!page.selected.has(idx)) return; // deselected while loading
-      updateNotifSingle(block, result);
+      updateNotifSingle(block, result, {page, word: seg.text, charStart: seg.charStart, charEnd: seg.charEnd});
       return;
     }
 
     const runs = computeRuns(selectedArr);
     for(const run of runs){
       const text = runText(page, run);
-      const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+state.settings.targetLang;
+      const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+TOKEN_LANG;
       const block = createNotifBlock(text, '불러오는 중...', run);
       appendNotif(block);
       (async ()=>{
         let translated = page.cache.get(runKey);
         if(!translated){
           try{
-            translated = await translatePlain(text);
+            translated = await translatePlain(text, TOKEN_LANG);
             page.cache.set(runKey, translated);
           }catch(err){
-            updateNotifError(block, err);
+            updateNotifError(block, err, ()=> renderNotifications());
             return;
           }
         }
         const stillValid = run.every(i=>page.selected.has(i));
         if(!stillValid) return;
-        updateNotifPlain(block, translated);
+        const startSeg = getWordSegByIndex(page, run[0]);
+        const endSeg = getWordSegByIndex(page, run[run.length-1]);
+        updateNotifPlain(block, translated, {page, word:text, charStart:startSeg.charStart, charEnd:endSeg.charEnd});
       })();
     }
   }
@@ -1029,7 +1772,7 @@
     }
   }
 
-  function updateNotifSingle(block, result){
+  function updateNotifSingle(block, result, pinCtx){
     syncBothPanels(block, (bodyEl)=>{
       bodyEl.innerHTML = '';
       if(result.dict && result.dict.length){
@@ -1046,40 +1789,381 @@
       } else {
         bodyEl.textContent = result.plain || '(번역 없음)';
       }
+      if(pinCtx){
+        bodyEl.appendChild(makePinBtn(pinCtx.word, formatTokenMeaning(result), pinCtx.page, pinCtx.charStart, pinCtx.charEnd));
+      }
     });
   }
 
-  function updateNotifPlain(block, text){
+  function updateNotifPlain(block, text, pinCtx){
     syncBothPanels(block, (bodyEl)=>{
       bodyEl.textContent = text || '(번역 없음)';
+      if(pinCtx){
+        bodyEl.appendChild(makePinBtn(pinCtx.word, text || '', pinCtx.page, pinCtx.charStart, pinCtx.charEnd));
+      }
     });
   }
 
-  function updateNotifError(block, err){
+  function updateNotifError(block, err, retryFn){
     syncBothPanels(block, (bodyEl)=>{
-      bodyEl.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
-      bodyEl.style.color = 'var(--danger)';
+      bodyEl.innerHTML = '';
+      const msg = document.createElement('span');
+      msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+      msg.style.color = 'var(--danger)';
+      bodyEl.appendChild(msg);
+      if(retryFn) bodyEl.appendChild(makeRetryBtn(retryFn));
     });
   }
 
-  async function renderParaTranslation(){
+  // Renders one block per translation slot configured for the active document, each
+  // auto-fetching (and caching on the page) its own language's translation of the
+  // current paragraph.
+  function renderParaTranslationSlots(){
     const page = state.pages[state.current];
-    if(page.paraTranslation){
-      paraTranslation.textContent = page.paraTranslation;
+    const doc = getActiveDoc();
+    paraTranslationSlots.innerHTML = '';
+    if(!doc || doc.translationSlots.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'small-note';
+      empty.textContent = '번역 슬롯이 없습니다. 좌측 "번역 슬롯"에서 추가해주세요.';
+      paraTranslationSlots.appendChild(empty);
       return;
     }
-    paraTranslation.textContent = '문단 번역 불러오는 중...';
-    try{
-      const t = await translatePlain(page.rawText);
-      page.paraTranslation = t;
-      if(state.pages[state.current] === page){
-        paraTranslation.textContent = t;
+    doc.translationSlots.forEach(slot=>{
+      const block = document.createElement('div');
+      block.className = 'para-translation-slot';
+      const label = document.createElement('div');
+      label.className = 'para-translation-slot-label';
+      label.textContent = slotLangLabel(slot.lang);
+      const body = document.createElement('div');
+      body.className = 'para-translation-slot-body';
+      block.appendChild(label);
+      block.appendChild(body);
+      paraTranslationSlots.appendChild(block);
+
+      const cached = page.paraTranslations[slot.id];
+      if(cached){
+        body.textContent = cached;
+        return;
       }
-      scheduleAutoSave();
-    }catch(err){
-      paraTranslation.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+      const slotId = slot.id, lang = slot.lang;
+      function attemptFetch(){
+        body.innerHTML = '';
+        body.textContent = '문단 번역 불러오는 중...';
+        translatePlain(page.rawText, lang).then(t=>{
+          page.paraTranslations[slotId] = t;
+          if(state.pages[state.current] === page && !state.expanded){
+            body.textContent = t;
+          }
+          scheduleAutoSave();
+        }).catch(()=>{
+          if(state.pages[state.current] !== page || state.expanded) return;
+          body.innerHTML = '';
+          const msg = document.createElement('span');
+          msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+          msg.style.color = 'var(--danger)';
+          body.appendChild(msg);
+          body.appendChild(makeRetryBtn(attemptFetch));
+        });
+      }
+      attemptFetch();
+    });
+  }
+
+  // ---------- Rendering (expanded / overview mode) ----------
+  // Shows every paragraph of the active document stacked in one scroll, with the same
+  // per-paragraph features as single-page mode (token selection, paragraph translation,
+  // "내 번역" input/save). Paragraph translations are fetched lazily (button) instead of
+  // all at once, since a long subtitle file could have hundreds of cues.
+  function jumpToPageFromExpanded(i){
+    state.current = i;
+    setExpanded(false);
+    scheduleAutoSave();
+  }
+
+  async function renderExpandedNotifPanel(page, pageIdx, container){
+    container.innerHTML = '';
+    const selectedArr = [...page.selected];
+    if(selectedArr.length === 0) return;
+
+    function buildBlock(srcText, refKey){
+      const div = document.createElement('div');
+      div.className = 'notif-block';
+      const src = document.createElement('div');
+      src.className = 'src';
+      src.textContent = srcText;
+      const body = document.createElement('div');
+      body.className = 'body';
+      body.textContent = '불러오는 중...';
+      const close = document.createElement('span');
+      close.className = 'close-x';
+      close.textContent = '✕';
+      close.addEventListener('click', ()=>{
+        if(Array.isArray(refKey)) refKey.forEach(i=>page.selected.delete(i));
+        else page.selected.delete(refKey);
+        rerenderExpandedBlock(pageIdx);
+      });
+      div.appendChild(close);
+      div.appendChild(src);
+      div.appendChild(body);
+      container.appendChild(div);
+      return body;
+    }
+
+    if(selectedArr.length === 1){
+      const idx = selectedArr[0];
+      const seg = getWordSegByIndex(page, idx);
+      const body = buildBlock(seg.text, idx);
+      const cacheKey = 'single:'+idx+':'+TOKEN_LANG;
+      let result = page.cache.get(cacheKey);
+      if(!result){
+        try{ result = await translateWithDict(seg.text); page.cache.set(cacheKey, result); }
+        catch(err){
+          body.innerHTML = '';
+          const msg = document.createElement('span');
+          msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+          msg.style.color = 'var(--danger)';
+          body.appendChild(msg);
+          body.appendChild(makeRetryBtn(()=> renderExpandedNotifPanel(page, pageIdx, container)));
+          return;
+        }
+      }
+      if(!page.selected.has(idx)) return;
+      if(result.dict && result.dict.length){
+        body.innerHTML = '';
+        result.dict.forEach(entry=>{
+          const line = document.createElement('div');
+          line.className = 'pos-line';
+          const label = document.createElement('span');
+          label.className = 'pos-label';
+          label.textContent = '['+entry.pos+']';
+          line.appendChild(label);
+          line.appendChild(document.createTextNode(entry.terms.join(', ')));
+          body.appendChild(line);
+        });
+      } else {
+        body.textContent = result.plain || '(번역 없음)';
+      }
+      body.appendChild(makePinBtn(seg.text, formatTokenMeaning(result), page, seg.charStart, seg.charEnd));
+      return;
+    }
+
+    const runs = computeRuns(selectedArr);
+    for(const run of runs){
+      const text = runText(page, run);
+      const body = buildBlock(text, run);
+      const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+TOKEN_LANG;
+      (async ()=>{
+        let translated = page.cache.get(runKey);
+        if(!translated){
+          try{ translated = await translatePlain(text, TOKEN_LANG); page.cache.set(runKey, translated); }
+          catch(err){
+            body.innerHTML = '';
+            const msg = document.createElement('span');
+            msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+            msg.style.color = 'var(--danger)';
+            body.appendChild(msg);
+            body.appendChild(makeRetryBtn(()=> renderExpandedNotifPanel(page, pageIdx, container)));
+            return;
+          }
+        }
+        if(!run.every(i=>page.selected.has(i))) return;
+        body.textContent = translated || '(번역 없음)';
+        const startSeg = getWordSegByIndex(page, run[0]);
+        const endSeg = getWordSegByIndex(page, run[run.length-1]);
+        body.appendChild(makePinBtn(text, translated || '', page, startSeg.charStart, endSeg.charEnd));
+      })();
     }
   }
+
+  function rerenderExpandedBlock(pageIdx){
+    const old = pageWrapExpanded.querySelector('.exp-block[data-page-index="'+pageIdx+'"]');
+    if(!old) return;
+    const page = state.pages[pageIdx];
+    if(!page) return;
+    const fresh = buildExpandedBlock(page, pageIdx);
+    old.replaceWith(fresh);
+  }
+
+  function buildExpandedBlock(page, i){
+    const wrap = document.createElement('div');
+    wrap.className = 'exp-block';
+    wrap.dataset.pageIndex = i;
+
+    const numEl = document.createElement('div');
+    numEl.className = 'exp-num';
+    numEl.textContent = '문단 '+(i+1)+(page.timecode ? '  ·  '+page.timecode : '');
+    numEl.title = '클릭하면 이 문단의 페이지 모드로 이동합니다';
+    numEl.addEventListener('click', ()=> jumpToPageFromExpanded(i));
+    wrap.appendChild(numEl);
+
+    const textEl = document.createElement('div');
+    textEl.className = 'para-text' + (page.timecode ? ' preserve-linebreaks' : '');
+    page.segments.forEach(seg=>{
+      if(seg.type === 'word'){
+        const span = document.createElement('span');
+        span.className = 'token' + (page.selected.has(seg.wordIndex) ? ' selected' : '');
+        span.textContent = seg.text;
+        span.dataset.wordIndex = seg.wordIndex;
+        span.addEventListener('click', ()=>{
+          if(page.selected.has(seg.wordIndex)) page.selected.delete(seg.wordIndex);
+          else page.selected.add(seg.wordIndex);
+          span.classList.toggle('selected');
+          renderExpandedNotifPanel(page, i, notifEl);
+          scheduleAutoSave();
+        });
+        textEl.appendChild(span);
+      } else {
+        textEl.appendChild(document.createTextNode(seg.text));
+      }
+    });
+    wrap.appendChild(textEl);
+
+    let metaEl = null;
+    if(page.timecode){
+      metaEl = document.createElement('div');
+      metaEl.className = 'subtitle-meta';
+      wrap.appendChild(metaEl);
+      renderSubtitleMeta(page, metaEl);
+    }
+
+    const notifEl = document.createElement('div');
+    notifEl.className = 'notif-panel';
+    wrap.appendChild(notifEl);
+    renderExpandedNotifPanel(page, i, notifEl);
+
+    const transWrap = document.createElement('div');
+    transWrap.className = 'para-translation-slots';
+    wrap.appendChild(transWrap);
+    const doc = getActiveDoc();
+    if(!doc || doc.translationSlots.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'small-note';
+      empty.textContent = '번역 슬롯이 없습니다.';
+      transWrap.appendChild(empty);
+    } else {
+      doc.translationSlots.forEach(slot=>{
+        const slotBlock = document.createElement('div');
+        slotBlock.className = 'para-translation-slot';
+        const slotLabel = document.createElement('div');
+        slotLabel.className = 'para-translation-slot-label';
+        slotLabel.textContent = slotLangLabel(slot.lang);
+        slotBlock.appendChild(slotLabel);
+        const slotBody = document.createElement('div');
+        slotBlock.appendChild(slotBody);
+        transWrap.appendChild(slotBlock);
+
+        const cached = page.paraTranslations[slot.id];
+        if(cached){
+          slotBody.textContent = cached;
+        } else {
+          function showLoadButton(){
+            slotBody.innerHTML = '';
+            const btn = document.createElement('button');
+            btn.className = 'compact-btn';
+            btn.textContent = '문단 번역 보기';
+            btn.addEventListener('click', attemptFetch);
+            slotBody.appendChild(btn);
+          }
+          async function attemptFetch(){
+            slotBody.innerHTML = '';
+            slotBody.textContent = '불러오는 중...';
+            try{
+              const t = await translatePlain(page.rawText, slot.lang);
+              page.paraTranslations[slot.id] = t;
+              slotBody.innerHTML = '';
+              slotBody.textContent = t;
+              scheduleAutoSave();
+            }catch(e){
+              slotBody.innerHTML = '';
+              const msg = document.createElement('span');
+              msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+              msg.style.color = 'var(--danger)';
+              slotBody.appendChild(msg);
+              slotBody.appendChild(makeRetryBtn(attemptFetch));
+            }
+          }
+          showLoadButton();
+        }
+      });
+    }
+
+    const userBlock = document.createElement('div');
+    userBlock.className = 'user-translation-block';
+    const label = document.createElement('label');
+    label.className = 'small-note';
+    label.textContent = '내 번역';
+    userBlock.appendChild(label);
+    const ta = document.createElement('textarea');
+    ta.className = 'user-translation-input';
+    ta.value = page.userDraft || '';
+    ta.placeholder = '이 문단에 대한 나만의 번역을 적어보세요';
+    userBlock.appendChild(ta);
+    const row = document.createElement('div');
+    row.className = 'ctrl-row';
+    row.style.justifyContent = 'flex-end';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'primary compact-btn';
+    saveBtn.title = '이 번역 저장';
+    saveBtn.textContent = '+';
+    row.appendChild(saveBtn);
+    userBlock.appendChild(row);
+    const savedList = document.createElement('div');
+    savedList.className = 'saved-translations';
+    userBlock.appendChild(savedList);
+    wrap.appendChild(userBlock);
+
+    function refreshSaved(){
+      renderSavedTranslations(page, savedList, ()=>{ if(metaEl) renderSubtitleMeta(page, metaEl); });
+    }
+    refreshSaved();
+
+    ta.addEventListener('input', ()=>{
+      page.userDraft = ta.value;
+      if(metaEl) renderSubtitleMeta(page, metaEl);
+      scheduleAutoSave();
+    });
+    saveBtn.addEventListener('click', ()=>{
+      const text = (page.userDraft || '').trim();
+      if(!text) return;
+      page.userTranslations.push(text);
+      page.userDraft = '';
+      ta.value = '';
+      refreshSaved();
+      if(metaEl) renderSubtitleMeta(page, metaEl);
+      scheduleAutoSave();
+    });
+
+    return wrap;
+  }
+
+  function renderExpandedView(){
+    pageWrapExpanded.innerHTML = '';
+    if(state.pages.length === 0){
+      const p = document.createElement('p');
+      p.className = 'small-note';
+      p.textContent = '불러온 글이 없습니다. 좌측 패널에서 글이나 자막을 불러와 주세요.';
+      pageWrapExpanded.appendChild(p);
+      return;
+    }
+    state.pages.forEach((page, i)=>{
+      pageWrapExpanded.appendChild(buildExpandedBlock(page, i));
+    });
+  }
+
+  function setExpanded(val){
+    state.expanded = val;
+    const label = val ? '페이지 모드로' : '전체 펼치기';
+    btnToggleExpand.querySelector('.btn-label').textContent = label;
+    btnToggleExpandMain.textContent = label;
+    pageWrapSingle.style.display = val ? 'none' : '';
+    pageNav.style.display = val ? 'none' : '';
+    pageWrapExpanded.style.display = val ? '' : 'none';
+    if(val) renderExpandedView(); else renderPage();
+    scheduleAutoSave();
+  }
+  btnToggleExpand.addEventListener('click', ()=> setExpanded(!state.expanded));
+  btnToggleExpandMain.addEventListener('click', ()=> setExpanded(!state.expanded));
 
   // ---------- Navigation ----------
   prevPageBtn.addEventListener('click', ()=>{
@@ -1090,7 +2174,8 @@
   });
   jumpSelect.addEventListener('change', ()=>{
     state.current = parseInt(jumpSelect.value, 10);
-    renderPage();
+    if(state.expanded) setExpanded(false);
+    else renderPage();
     closeDrawerIfMobile();
   });
 
@@ -1115,7 +2200,7 @@
     if(!file) return;
     const reader = new FileReader();
     reader.onload = ()=>{
-      loadText(reader.result);
+      loadText(reader.result, baseNameWithoutExt(file.name));
       closeDrawerIfMobile();
     };
     reader.readAsText(file, 'utf-8');
@@ -1132,6 +2217,63 @@
     };
     reader.readAsText(file, 'utf-8');
     subtitleInput.value = '';
+  });
+
+  btnLoadHighlights.addEventListener('click', ()=> highlightsInput.click());
+  highlightsInput.addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      loadHighlights(reader.result, baseNameWithoutExt(file.name));
+      closeDrawerIfMobile();
+    };
+    reader.readAsText(file, 'utf-8');
+    highlightsInput.value = '';
+  });
+
+  btnLoadWebArticle.addEventListener('click', ()=>{
+    webArticleUrlInput.value = '';
+    webArticleHtmlInput.value = '';
+    webArticleStatus.textContent = '';
+    webArticleModal.classList.add('open');
+    closeDrawerIfMobile();
+  });
+  btnWebArticleCancel.addEventListener('click', ()=>{
+    webArticleModal.classList.remove('open');
+  });
+  btnWebArticleFetch.addEventListener('click', async ()=>{
+    const url = webArticleUrlInput.value.trim();
+    if(!url) return;
+    webArticleStatus.textContent = '가져오는 중...';
+    btnWebArticleFetch.disabled = true;
+    try{
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const html = await res.text();
+      webArticleHtmlInput.value = html;
+      webArticleStatus.textContent = 'URL에서 가져왔습니다. 아래 "본문 추출해서 불러오기"를 눌러주세요.';
+    }catch(e){
+      webArticleStatus.textContent = 'URL로 직접 가져오지 못했습니다 (사이트의 CORS 제한일 수 있음). 페이지에서 Ctrl+U(또는 우클릭 → 페이지 소스 보기) 후 전체 복사해서 아래에 붙여넣어 주세요.';
+    }finally{
+      btnWebArticleFetch.disabled = false;
+    }
+  });
+  btnWebArticleExtract.addEventListener('click', ()=>{
+    const html = webArticleHtmlInput.value;
+    if(!html.trim()){
+      webArticleStatus.textContent = '먼저 URL로 가져오거나 페이지 소스를 붙여넣어 주세요.';
+      return;
+    }
+    const {title, paragraphs} = extractArticleFromHtml(html);
+    if(paragraphs.length === 0){
+      webArticleStatus.textContent = '본문을 찾지 못했습니다. 다른 페이지이거나 구조가 특이할 수 있습니다.';
+      return;
+    }
+    const doc = createDoc(title || '웹 문서', paragraphs, null, null);
+    addDocAndActivate(doc);
+    webArticleModal.classList.remove('open');
+    closeDrawerIfMobile();
   });
 
   // ---------- Controls: font / size / lang / dark ----------
@@ -1151,13 +2293,101 @@
     state.settings.koSize = parseInt(koSizeRange.value,10);
     applySettingsToDOM(); saveSettings();
   });
-  targetLangSelect.addEventListener('change', ()=>{
-    state.settings.targetLang = targetLangSelect.value;
-    // invalidate cached translations since language changed
-    state.pages.forEach(p=>{ p.cache.clear(); p.paraTranslation = null; });
-    applySettingsToDOM(); saveSettings();
-    renderPage();
+
+  // ---------- Translation slots (per-document paragraph-translation language slots) ----------
+  function renderTranslationSlotsUI(){
+    const doc = getActiveDoc();
+
+    // Source (original text) language selector
+    sourceLangSelect.innerHTML = '';
+    SOURCE_LANG_OPTIONS.forEach(o=>{
+      const opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.label;
+      sourceLangSelect.appendChild(opt);
+    });
+    sourceLangSelect.disabled = !doc;
+    if(doc) sourceLangSelect.value = doc.sourceLang || 'auto';
+
+    translationSlotsList.innerHTML = '';
+    if(!doc || doc.translationSlots.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'small-note';
+      empty.textContent = doc ? '번역 슬롯이 없습니다. 아래 버튼으로 추가하세요.' : '작업을 먼저 불러오세요.';
+      translationSlotsList.appendChild(empty);
+      btnAddSlot.disabled = !doc;
+      return;
+    }
+    btnAddSlot.disabled = false;
+    doc.translationSlots.forEach(slot=>{
+      const row = document.createElement('div');
+      row.className = 'slot-row';
+      const select = document.createElement('select');
+      LANG_OPTIONS.forEach(o=>{
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.label;
+        if(o.value === slot.lang) opt.selected = true;
+        select.appendChild(opt);
+      });
+      select.addEventListener('change', ()=> changeTranslationSlotLang(slot.id, select.value));
+      const del = document.createElement('button');
+      del.className = 'slot-del-btn';
+      del.textContent = '✕';
+      del.title = '이 번역 슬롯 삭제';
+      del.setAttribute('aria-label', '번역 슬롯 삭제');
+      del.addEventListener('click', ()=> removeTranslationSlot(slot.id));
+      row.appendChild(select);
+      row.appendChild(del);
+      translationSlotsList.appendChild(row);
+    });
+  }
+
+  function addTranslationSlot(){
+    const doc = getActiveDoc();
+    if(!doc) return;
+    const used = new Set(doc.translationSlots.map(s=>s.lang));
+    const free = LANG_OPTIONS.find(o=>!used.has(o.value));
+    const lang = free ? free.value : LANG_OPTIONS[0].value;
+    doc.translationSlots.push({id: genSlotId(), lang});
+    renderTranslationSlotsUI();
+    if(state.expanded) renderExpandedView(); else renderPage();
+    scheduleAutoSave();
+  }
+
+  function removeTranslationSlot(slotId){
+    const doc = getActiveDoc();
+    if(!doc) return;
+    doc.translationSlots = doc.translationSlots.filter(s=>s.id!==slotId);
+    doc.pages.forEach(p=>{ delete p.paraTranslations[slotId]; });
+    renderTranslationSlotsUI();
+    if(state.expanded) renderExpandedView(); else renderPage();
+    scheduleAutoSave();
+  }
+
+  function changeTranslationSlotLang(slotId, lang){
+    const doc = getActiveDoc();
+    if(!doc) return;
+    const slot = doc.translationSlots.find(s=>s.id===slotId);
+    if(!slot) return;
+    slot.lang = lang;
+    // invalidate cached translations for this slot only, since its language changed
+    doc.pages.forEach(p=>{ p.paraTranslations[slotId] = null; });
+    if(state.expanded) renderExpandedView(); else renderPage();
+    scheduleAutoSave();
+  }
+
+  sourceLangSelect.addEventListener('change', ()=>{
+    const doc = getActiveDoc();
+    if(!doc) return;
+    doc.sourceLang = sourceLangSelect.value;
+    // invalidate cached translations for this document since the source language changed
+    doc.pages.forEach(p=>{ p.cache.clear(); p.paraTranslations = {}; });
+    if(state.expanded) renderExpandedView(); else renderPage();
+    scheduleAutoSave();
   });
+
+  btnAddSlot.addEventListener('click', addTranslationSlot);
   btnDark.addEventListener('click', ()=>{
     state.settings.dark = !state.settings.dark;
     applySettingsToDOM(); saveSettings();
@@ -1171,7 +2401,7 @@
     if(state.pages.length===0) return;
     const page = state.pages[state.current];
     page.userDraft = userTranslationInput.value;
-    renderSubtitleMeta(page);
+    renderSubtitleMeta(page, subtitleMeta);
     scheduleAutoSave();
   });
   btnSaveTranslation.addEventListener('click', ()=>{
@@ -1182,14 +2412,82 @@
     page.userTranslations.push(text);
     page.userDraft = '';
     userTranslationInput.value = '';
-    renderSavedTranslations(page);
-    renderSubtitleMeta(page);
+    renderSavedTranslations(page, savedTranslationsList, ()=> renderSubtitleMeta(page, subtitleMeta));
+    renderSubtitleMeta(page, subtitleMeta);
     scheduleAutoSave();
   });
-  
+
 
   // ---------- Export ----------
+  function sanitizeFileName(name){
+    const cleaned = (name || '').replace(/[\\/:*?"<>|]+/g, '_').trim();
+    return cleaned || 'untitled';
+  }
+
+  // ---------- Anki (.apkg) export for pinned words ----------
+  // Loaded lazily on first export click, since these are somewhat heavy (sql.js WASM).
+  // Uses genanki-js (https://github.com/krmanik/genanki-js), which itself depends on
+  // JSZip, FileSaver.js and sql.js — all pulled from public CDNs at runtime.
+  let ankiLibsPromise = null;
+  function loadScript(src){
+    return new Promise((resolve, reject)=>{
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = ()=> resolve();
+      s.onerror = ()=> reject(new Error('스크립트 로드 실패: '+src));
+      document.head.appendChild(s);
+    });
+  }
+  function ensureAnkiLibs(){
+    if(ankiLibsPromise) return ankiLibsPromise;
+    ankiLibsPromise = (async ()=>{
+      await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js');
+      await loadScript('https://cdn.jsdelivr.net/gh/krmanik/genanki-js/dist/genanki.js');
+      if(typeof initSqlJs !== 'function') throw new Error('sql.js 로드 실패');
+      const sql = await initSqlJs({ locateFile: f => 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/'+f });
+      window.SQL = sql;
+    })();
+    return ankiLibsPromise;
+  }
+
+  async function doExportApkg(){
+    if(state.pinnedTokens.length === 0) return;
+    const btns = [btnExportApkg, btnExportApkgMobile].filter(Boolean);
+    btns.forEach(b=>{ b.disabled = true; b.dataset.origText = b.textContent; b.textContent = '불러오는 중...'; });
+    try{
+      await ensureAnkiLibs();
+      const model = new Model({
+        name: '러시아어 읽기 학습기 - 단어',
+        id: '1691000000001',
+        flds: [ {name:'단어'}, {name:'뜻'}, {name:'예문'}, {name:'예문 뜻'} ],
+        req: [[0, 'all', [0]]],
+        tmpls: [{
+          name: 'Card 1',
+          qfmt: '{{단어}}',
+          afmt: '{{FrontSide}}<hr id="answer">{{뜻}}<br><br><i>{{예문}}</i><br>{{예문 뜻}}'
+        }]
+      });
+      const doc = getActiveDoc();
+      const deck = new Deck(Date.now(), (doc && doc.title ? doc.title : '러시아어 읽기') + ' 단어');
+      state.pinnedTokens.forEach(item=>{
+        deck.addNote(model.note([item.word, item.meaning, item.sentence, item.sentenceTranslation]));
+      });
+      const pkg = new Package();
+      pkg.addDeck(deck);
+      await pkg.writeToFile(sanitizeFileName(doc ? doc.title : 'russian-vocab')+'.apkg');
+    }catch(e){
+      alert('Anki 파일 생성 중 오류가 발생했습니다: '+(e && e.message ? e.message : e));
+    } finally {
+      btns.forEach(b=>{ b.disabled = state.pinnedTokens.length === 0; b.textContent = b.dataset.origText || '📤 .apkg'; });
+    }
+  }
+  if(btnExportApkg) btnExportApkg.addEventListener('click', doExportApkg);
+  if(btnExportApkgMobile) btnExportApkgMobile.addEventListener('click', doExportApkg);
+
   async function buildExportText(){
+    const doc = getActiveDoc();
     let out = '';
     for(let i=0;i<state.pages.length;i++){
       const page = state.pages[i];
@@ -1205,7 +2503,7 @@
           if(selectedArr.length === 1){
             const idx = selectedArr[0];
             const seg = getWordSegByIndex(page, idx);
-            const cacheKey = 'single:'+idx+':'+state.settings.targetLang;
+            const cacheKey = 'single:'+idx+':'+TOKEN_LANG;
             let result = page.cache.get(cacheKey);
             if(!result){
               try{ result = await translateWithDict(seg.text); page.cache.set(cacheKey, result); }
@@ -1222,10 +2520,10 @@
             const runs = computeRuns(selectedArr);
             for(const run of runs){
               const text = runText(page, run);
-              const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+state.settings.targetLang;
+              const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+TOKEN_LANG;
               let translated = page.cache.get(runKey);
               if(!translated){
-                try{ translated = await translatePlain(text); page.cache.set(runKey, translated); }
+                try{ translated = await translatePlain(text, TOKEN_LANG); page.cache.set(runKey, translated); }
                 catch(e){ translated = '(번역 실패)'; }
               }
               out += text+' => '+translated+'\n';
@@ -1237,11 +2535,18 @@
 
       if(state.exportOpts.para){
         out += '[문단 번역]\n';
-        if(!page.paraTranslation){
-          try{ page.paraTranslation = await translatePlain(page.rawText); }
-          catch(e){ page.paraTranslation = '(번역 실패)'; }
+        if(doc && doc.translationSlots.length){
+          for(const slot of doc.translationSlots){
+            if(!page.paraTranslations[slot.id]){
+              try{ page.paraTranslations[slot.id] = await translatePlain(page.rawText, slot.lang); }
+              catch(e){ page.paraTranslations[slot.id] = '(번역 실패)'; }
+            }
+            out += '('+slotLangLabel(slot.lang)+') '+page.paraTranslations[slot.id]+'\n';
+          }
+        } else {
+          out += '(번역 슬롯 없음)\n';
         }
-        out += page.paraTranslation+'\n\n';
+        out += '\n';
       }
 
       if(state.exportOpts.user){
@@ -1311,7 +2616,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'russian-reading-export.txt';
+      a.download = sanitizeFileName(state.docTitle || 'russian-reading-export')+'.txt';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1338,7 +2643,7 @@
   }
 
   function subtitleExportFileName(ext){
-    const base = state.subtitleBaseName || 'russian-translated';
+    const base = sanitizeFileName(state.docTitle) || 'russian-translated';
     return base+'_edited.'+ext;
   }
 
@@ -1426,9 +2731,8 @@
   });
 
   // ---------- Mid-save (progress persistence) ----------
-  const PROGRESS_KEY = 'ru-reader-progress-v1';
+  const PROGRESS_KEY = 'ru-reader-progress-v2';
   let autoSaveTimer = null;
-
 
   function scheduleAutoSave(){
     if(autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -1437,17 +2741,26 @@
 
   function serializeProgress(){
     return {
-      current: state.current,
+      activeDocId: state.activeDocId,
+      expanded: state.expanded,
       settings: state.settings,
-      exportOpts: state.exportOpts,
-      subtitleBaseName: state.subtitleBaseName,
-      pages: state.pages.map(p => ({
-        rawText: p.rawText,
-        selected: [...p.selected],
-        paraTranslation: p.paraTranslation,
-        userTranslations: p.userTranslations,
-        userDraft: p.userDraft,
-        timecode: p.timecode
+      pinnedTokens: state.pinnedTokens,
+      docs: state.docs.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        current: doc.current,
+        exportOpts: doc.exportOpts,
+        subtitleBaseName: doc.subtitleBaseName,
+        translationSlots: doc.translationSlots,
+        sourceLang: doc.sourceLang,
+        pages: doc.pages.map(p => ({
+          rawText: p.rawText,
+          selected: [...p.selected],
+          paraTranslations: p.paraTranslations,
+          userTranslations: p.userTranslations,
+          userDraft: p.userDraft,
+          timecode: p.timecode
+        }))
       })),
       savedAt: Date.now()
     };
@@ -1460,7 +2773,7 @@
   }
 
   function saveProgressToStorage(manual){
-    if(state.pages.length === 0) return;
+    if(state.docs.length === 0) return;
     try{
       const data = serializeProgress();
       localStorage.setItem(PROGRESS_KEY, JSON.stringify(data));
@@ -1476,30 +2789,48 @@
     if(!raw) return;
     let data;
     try{ data = JSON.parse(raw); }catch(e){ return; }
-    if(!data || !Array.isArray(data.pages) || data.pages.length === 0) return;
+    if(!data || !Array.isArray(data.docs) || data.docs.length === 0) return;
     const when = data.savedAt ? formatSavedTime(data.savedAt) : '알 수 없음';
-    const ok = confirm('이전에 저장된 작업 내용이 있습니다 ('+when+' 저장, 문단 '+data.pages.length+'개).\n불러올까요?\n(취소하면 새로 시작합니다)');
-    if(!ok) return;
-    state.pages = data.pages.map(sp => {
-      const {segments, wordCount} = tokenizeParagraph(sp.rawText);
+    // Restores automatically without a confirmation prompt — use the "저장 삭제" button
+    // in the left panel if you'd rather start fresh.
+
+    state.pinnedTokens = Array.isArray(data.pinnedTokens) ? data.pinnedTokens : [];
+    state.docs = data.docs.map(sd=>{
+      const pages = (sd.pages||[]).map(sp=>{
+        const {segments, wordCount} = tokenizeParagraph(sp.rawText);
+        return {
+          rawText: sp.rawText,
+          segments, wordCount,
+          selected: new Set(sp.selected || []),
+          cache: new Map(),
+          paraTranslations: (sp.paraTranslations && typeof sp.paraTranslations === 'object') ? sp.paraTranslations : {},
+          userTranslations: sp.userTranslations || [],
+          userDraft: sp.userDraft || '',
+          timecode: sp.timecode || null
+        };
+      });
       return {
-        rawText: sp.rawText,
-        segments, wordCount,
-        selected: new Set(sp.selected || []),
-        cache: new Map(),
-        paraTranslation: sp.paraTranslation || null,
-        userTranslations: sp.userTranslations || [],
-        userDraft: sp.userDraft || '',
-        timecode: sp.timecode || null
+        id: sd.id || genDocId(),
+        title: sd.title || '제목 없음',
+        pages,
+        current: Math.min(sd.current || 0, Math.max(pages.length-1, 0)),
+        exportOpts: Object.assign({para:true,user:true,tokens:true}, sd.exportOpts || {}),
+        subtitleBaseName: sd.subtitleBaseName || null,
+        translationSlots: (Array.isArray(sd.translationSlots) && sd.translationSlots.length)
+          ? sd.translationSlots.map(s => ({id: s.id || genSlotId(), lang: s.lang || 'ko'}))
+          : defaultTranslationSlots(),
+        sourceLang: sd.sourceLang || 'ru'
       };
     });
-    state.current = Math.min(data.current || 0, state.pages.length-1);
+    state.activeDocId = data.docs.some(d=>d.id===data.activeDocId) ? data.activeDocId : (state.docs[0] ? state.docs[0].id : null);
     if(data.settings) Object.assign(state.settings, data.settings);
-    if(data.exportOpts) Object.assign(state.exportOpts, data.exportOpts);
-    state.subtitleBaseName = data.subtitleBaseName || null;
+
     buildJumpSelect();
     applySettingsToDOM();
-    renderPage();
+    renderTaskLists();
+    renderTranslationSlotsUI();
+    renderPinnedTokens();
+    setExpanded(!!data.expanded);
     saveStatusLabel.textContent = '불러옴: '+when;
   }
 
@@ -1512,12 +2843,15 @@
     saveStatusLabel.textContent = '자동 저장: 아직 없음';
   });
   window.addEventListener('beforeunload', ()=>{
-    if(state.pages.length) saveProgressToStorage(false);
+    if(state.docs.length) saveProgressToStorage(false);
   });
 
   // ---------- Init ----------
   loadSettings();
   applySettingsToDOM();
+  renderTaskLists();
+  renderTranslationSlotsUI();
+  renderPinnedTokens();
   restoreProgressFromStorage();
 })();
 </script>

@@ -103,11 +103,6 @@
     margin:0 auto;
     width:100%;
   }
-  .view-toggle-row{
-    display:flex;
-    justify-content:flex-end;
-    margin-bottom:8px;
-  }
   .compact-btn{
     padding:4px 9px;
     font-size:12px;
@@ -171,6 +166,11 @@
   }
   .pin-btn:hover{border-color:var(--accent);}
   .pin-btn:disabled{opacity:.6;cursor:default;}
+  .pin-btn.done{color:var(--accent2);border-color:var(--accent2);opacity:1;}
+  .pinned-doc-label{
+    font-size:11px;color:var(--accent2);font-weight:700;
+    margin:8px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
   .pinned-item{
     background:var(--bg-alt);
     border:1px solid var(--border);
@@ -193,6 +193,35 @@
     font-size:12px;
   }
   .pinned-item .del-x:hover{color:var(--danger);}
+  .pinned-dict-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+  .pinned-dict-link{
+    font-family:var(--ru-font);
+    font-size:11px;
+    text-decoration:none;
+    color:var(--accent);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:1px 7px;
+  }
+  .pinned-dict-link:hover{border-color:var(--accent);}
+  .bookmark-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:6px;
+    padding:6px 8px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    font-size:12px;
+    cursor:pointer;
+    margin-bottom:6px;
+  }
+  .bookmark-item:hover{border-color:var(--accent);}
+  .bookmark-item.current{border-color:var(--accent);background:var(--bg-alt);}
+  .bookmark-item-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bookmark-item-num{color:var(--accent);font-weight:700;margin-right:4px;}
+  .bookmark-item-del{color:var(--muted);font-size:11px;cursor:pointer;padding:2px 5px;}
+  .bookmark-item-del:hover{color:var(--danger);}
   .pinned-edit-form{
     display:none;
     flex-direction:column;
@@ -359,7 +388,56 @@
     margin-bottom:10px;
   }
   .page-nav button{padding:5px 9px;font-size:12px;}
-  #pageIndicator{font-size:12px;color:var(--muted);}
+  #pageIndicator{
+    font-size:12px;
+    color:var(--muted);
+    background:transparent;
+    border:1px solid transparent;
+    border-bottom:1px dashed var(--border);
+    border-radius:5px;
+    padding:3px 8px;
+  }
+  #pageIndicator:hover{color:var(--accent);border-color:var(--accent);}
+  #btnBookmark{
+    background:transparent;
+    border:1px solid transparent;
+    font-size:16px;
+    line-height:1;
+    padding:2px 6px;
+    color:var(--muted);
+  }
+  #btnBookmark.on{color:#b58900;}
+  #btnBookmark:hover{border-color:var(--accent);}
+  .exp-head{display:flex;align-items:center;gap:8px;}
+  .exp-bookmark{
+    background:transparent;
+    border:1px solid transparent;
+    font-size:15px;
+    line-height:1;
+    padding:1px 5px;
+    color:var(--muted);
+  }
+  .exp-bookmark.on{color:#b58900;}
+  .float-nav{
+    position:fixed;
+    top:50%;
+    transform:translateY(-50%);
+    z-index:40;
+    width:26px;height:58px;
+    padding:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;line-height:1;
+    border:none;
+    border-radius:8px;
+    background:rgba(128,128,128,.14);
+    color:rgba(110,110,110,.8);
+    opacity:.6;
+  }
+  .float-nav:hover{opacity:1;background:rgba(128,128,128,.28);}
+  .float-nav:disabled{opacity:.15;cursor:default;}
+  #prevPage{left:256px;}
+  #nextPage{right:306px;}
+  #jumpNumInput{width:90px;}
   textarea#pasteArea{width:100%;min-height:150px;font-family:var(--ru-font);}
   .modal-overlay{
     display:none;
@@ -507,7 +585,11 @@
       box-shadow:none;
     }
     .page-nav button{padding:4px 6px;font-size:12px;}
-    #pageIndicator{font-size:11px;white-space:nowrap;}
+    #pageIndicator{font-size:11px;white-space:nowrap;padding:2px 6px;}
+    #btnBookmark{padding:0 4px;font-size:16px;}
+    .float-nav{width:20px;height:50px;font-size:20px;padding:0;}
+    #prevPage{left:2px;}
+    #nextPage{right:2px;}
   }
 </style>
 </head>
@@ -538,12 +620,6 @@
       <h4>보기</h4>
       <div class="ctrl-row">
         <button id="btnToggleExpand" title="전체 문단을 펼쳐서 훑어보기" aria-label="펼쳐보기 전환"><span class="btn-label">전체 펼치기</span></button>
-      </div>
-    </div>
-    <div class="ctrl-group">
-      <h4>이동</h4>
-      <div class="ctrl-row">
-        <select id="jumpSelect" style="max-width:100%;width:100%;"></select>
       </div>
     </div>
     <div class="ctrl-group">
@@ -612,12 +688,8 @@
 
   <main class="main-col">
     <div class="page-nav" id="pageNav">
-      <button id="prevPage" title="이전 문단" aria-label="이전 문단"><span class="icon">◀</span><span class="btn-label">이전 문단</span></button>
-      <span id="pageIndicator">0 / 0</span>
-      <button id="nextPage" title="다음 문단" aria-label="다음 문단"><span class="btn-label">다음 문단</span><span class="icon">▶</span></button>
-    </div>
-    <div class="view-toggle-row">
-      <button id="btnToggleExpandMain" class="compact-btn" title="전체 문단을 펼쳐서 훑어보기" aria-label="펼쳐보기 전환">전체 펼치기</button>
+      <button id="pageIndicator" title="눌러서 문단 번호로 이동 / 북마크 보기" aria-label="문단 이동">0 / 0</button>
+      <button id="btnBookmark" title="이 문단 북마크" aria-label="이 문단 북마크">☆</button>
     </div>
     <div class="page-wrap" id="pageWrapSingle">
       <div class="paragraph-block">
@@ -650,6 +722,13 @@
     <hr>
     <div>
       <div class="flex-between">
+        <h3 style="font-size:14px;">북마크 (현재 작업)</h3>
+      </div>
+      <div id="bookmarkListDesktop"></div>
+    </div>
+    <hr>
+    <div>
+      <div class="flex-between">
         <h3 style="font-size:14px;">선택한 단어 / 구 번역</h3>
         <button id="btnClearSel" style="font-size:11px;" title="전체 해제" aria-label="선택 전체 해제"><span class="icon">✕</span><span class="btn-label">전체 해제</span></button>
       </div>
@@ -657,9 +736,18 @@
     </div>
     <hr>
     <div>
-      <div class="flex-between">
-        <h3 style="font-size:14px;">고정된 단어 (Anki 내보내기)</h3>
-        <button id="btnExportApkg" style="font-size:11px;" title="Anki 카드(.apkg)로 내보내기" aria-label="Anki로 내보내기" disabled>📤 .apkg</button>
+      <div class="flex-between" style="flex-wrap:wrap;gap:6px;">
+        <h3 style="font-size:14px;">고정된 단어 (Anki)</h3>
+        <div class="ctrl-row" style="flex-wrap:nowrap;white-space:nowrap;">
+          <button id="btnClearPinned" style="font-size:14px;padding:4px 9px;line-height:1;" title="고정된 단어 전체 비우기" aria-label="고정된 단어 비우기" disabled>🗑</button>
+          <button id="btnExportApkg" style="font-size:14px;padding:4px 9px;line-height:1;" title="Anki 카드(.apkg)로 내려받기" aria-label="Anki 카드 내려받기" disabled>⬇</button>
+        </div>
+      </div>
+      <div class="ctrl-row" style="margin:6px 0;">
+        <select id="pinScopeSelect" style="font-size:12px;" aria-label="고정 단어 보기 범위">
+          <option value="doc">이 작업만</option>
+          <option value="all">모든 작업</option>
+        </select>
       </div>
       <div id="pinnedTokensList"></div>
     </div>
@@ -670,11 +758,42 @@
   <h3 style="font-size:14px;margin:0;">작업 목록</h3>
   <div class="task-list" id="taskListMobile"></div>
   <hr>
-  <div class="flex-between">
-    <h3 style="font-size:14px;margin:0;">고정된 단어 (Anki 내보내기)</h3>
-    <button id="btnExportApkgMobile" style="font-size:11px;" title="Anki 카드(.apkg)로 내보내기" aria-label="Anki로 내보내기" disabled>📤 .apkg</button>
+  <h3 style="font-size:14px;margin:0;">북마크 (현재 작업)</h3>
+  <div id="bookmarkListMobile"></div>
+  <hr>
+  <div class="flex-between" style="flex-wrap:wrap;gap:6px;">
+    <h3 style="font-size:14px;margin:0;">고정된 단어 (Anki)</h3>
+    <div class="ctrl-row" style="flex-wrap:nowrap;white-space:nowrap;">
+      <button id="btnClearPinnedMobile" style="font-size:14px;padding:4px 9px;line-height:1;" title="고정된 단어 전체 비우기" aria-label="고정된 단어 비우기" disabled>🗑</button>
+      <button id="btnExportApkgMobile" style="font-size:14px;padding:4px 9px;line-height:1;" title="Anki 카드(.apkg)로 내려받기" aria-label="Anki 카드 내려받기" disabled>⬇</button>
+    </div>
+  </div>
+  <div class="ctrl-row" style="margin:6px 0;">
+    <select id="pinScopeSelectMobile" style="font-size:12px;" aria-label="고정 단어 보기 범위">
+      <option value="doc">이 작업만</option>
+      <option value="all">모든 작업</option>
+    </select>
   </div>
   <div id="pinnedTokensListMobile"></div>
+</div>
+
+<button id="prevPage" class="float-nav" title="이전 문단" aria-label="이전 문단">‹</button>
+<button id="nextPage" class="float-nav" title="다음 문단" aria-label="다음 문단">›</button>
+
+<div class="modal-overlay" id="jumpModal">
+  <div class="modal" style="width:min(420px,90vw);">
+    <h3>문단 이동</h3>
+    <div class="ctrl-row">
+      <input type="number" id="jumpNumInput" min="1" step="1" inputmode="numeric">
+      <span class="small-note" id="jumpTotalLabel"></span>
+      <button id="btnJumpGo" class="primary compact-btn">이동</button>
+    </div>
+    <div class="small-note">북마크 (현재 작업)</div>
+    <div id="jumpBookmarkList"></div>
+    <div class="ctrl-row" style="justify-content:flex-end;">
+      <button id="btnJumpClose">닫기</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="pasteModal">
@@ -733,10 +852,10 @@
   // so the rest of the app (rendering, translation, export, autosave) can keep reading/writing
   // them exactly as before without needing to know about the document list.
   const state = {
-    docs: [],            // [{id, title, pages, current, exportOpts, subtitleBaseName, translationSlots, sourceLang}]
+    docs: [],            // [{id, title, pages, current, exportOpts, subtitleBaseName, translationSlots, sourceLang, pinnedTokens}]
     activeDocId: null,
     expanded: false,      // "전체 펼치기" overview mode
-    pinnedTokens: [],     // [{id, word, meaning, sentence, sentenceTranslation}] — global, for Anki export
+    pinScope: 'doc',      // pinned-word list scope: 'doc' (active document only) | 'all' (every document)
     settings: {
       ruFont: "'PT Serif', serif",
       koFont: "'Noto Sans KR', sans-serif",
@@ -837,10 +956,22 @@
   const notifPanelMobile = document.getElementById('notifPanelMobile');
   const pinnedTokensList = document.getElementById('pinnedTokensList');
   const pinnedTokensListMobile = document.getElementById('pinnedTokensListMobile');
+  const pinScopeSelect = document.getElementById('pinScopeSelect');
+  const pinScopeSelectMobile = document.getElementById('pinScopeSelectMobile');
   const btnExportApkg = document.getElementById('btnExportApkg');
   const btnExportApkgMobile = document.getElementById('btnExportApkgMobile');
   const pageIndicator = document.getElementById('pageIndicator');
-  const jumpSelect = document.getElementById('jumpSelect');
+  const btnClearPinned = document.getElementById('btnClearPinned');
+  const btnClearPinnedMobile = document.getElementById('btnClearPinnedMobile');
+  const btnBookmark = document.getElementById('btnBookmark');
+  const bookmarkListDesktop = document.getElementById('bookmarkListDesktop');
+  const bookmarkListMobile = document.getElementById('bookmarkListMobile');
+  const jumpModal = document.getElementById('jumpModal');
+  const jumpNumInput = document.getElementById('jumpNumInput');
+  const jumpTotalLabel = document.getElementById('jumpTotalLabel');
+  const btnJumpGo = document.getElementById('btnJumpGo');
+  const btnJumpClose = document.getElementById('btnJumpClose');
+  const jumpBookmarkList = document.getElementById('jumpBookmarkList');
   const prevPageBtn = document.getElementById('prevPage');
   const nextPageBtn = document.getElementById('nextPage');
   const ruFontSelect = document.getElementById('ruFontSelect');
@@ -899,7 +1030,6 @@
   const taskListDesktop = document.getElementById('taskListDesktop');
   const taskListMobile = document.getElementById('taskListMobile');
   const btnToggleExpand = document.getElementById('btnToggleExpand');
-  const btnToggleExpandMain = document.getElementById('btnToggleExpandMain');
   const pageWrapSingle = document.getElementById('pageWrapSingle');
   const pageWrapExpanded = document.getElementById('pageWrapExpanded');
   const pageNav = document.getElementById('pageNav');
@@ -986,6 +1116,7 @@
         paraTranslations: {}, // slotId -> translated text | null (in progress) — cached, mid-saved
         userTranslations: [],
         userDraft: '',
+        bookmarked: false,
         timecode: (timecodes && timecodes[i]) ? timecodes[i] : null
       };
     });
@@ -1008,14 +1139,16 @@
       exportOpts: {para:true, user:true, tokens:true},
       subtitleBaseName: subtitleBaseName || null,
       translationSlots: defaultTranslationSlots(), // per-document; each {id, lang}
-      sourceLang: 'ru' // per-document source (original text) language; 'auto' = auto-detect
+      sourceLang: 'ru', // per-document source (original text) language; 'auto' = auto-detect
+      pinnedTokens: []  // per-document pinned words for Anki: [{id, word, meaning, sentence, sentenceTranslation}]
     };
   }
 
   function addDocAndActivate(doc){
     state.docs.push(doc);
     state.activeDocId = doc.id;
-    buildJumpSelect();
+    renderBookmarks();
+    renderPinnedTokens();
     renderTaskLists();
     renderTranslationSlotsUI();
     if(state.expanded) renderExpandedView(); else renderPage();
@@ -1031,7 +1164,8 @@
     const target = state.docs.find(d=>d.id===id);
     if(!target) return;
     state.activeDocId = id;
-    buildJumpSelect();
+    renderBookmarks();
+    renderPinnedTokens();
     renderTaskLists();
     renderTranslationSlotsUI();
     if(state.expanded) renderExpandedView(); else renderPage();
@@ -1053,7 +1187,8 @@
         state.activeDocId = null;
       }
     }
-    buildJumpSelect();
+    renderBookmarks();
+    renderPinnedTokens();
     renderTaskLists();
     renderTranslationSlotsUI();
     if(state.expanded) renderExpandedView(); else renderPage();
@@ -1117,7 +1252,8 @@
         del.title = '이 작업 삭제';
         del.addEventListener('click', (e)=>{
           e.stopPropagation();
-          if(!confirm('"'+(doc.title || '제목 없음')+'" 작업을 목록에서 삭제할까요?')) return;
+          const pinCount = (doc.pinnedTokens || []).length;
+          if(!confirm('"'+(doc.title || '제목 없음')+'" 작업을 목록에서 삭제할까요?'+(pinCount ? '\n(이 작업에 고정된 단어 '+pinCount+'개도 함께 삭제됩니다)' : ''))) return;
           deleteDoc(doc.id);
         });
         item.appendChild(label);
@@ -1282,16 +1418,113 @@
     addDocAndActivate(doc);
   }
 
-  function buildJumpSelect(){
-    jumpSelect.innerHTML = '';
-    state.pages.forEach((p, i)=>{
-      const opt = document.createElement('option');
-      opt.value = i;
-      const preview = p.rawText.slice(0,20).replace(/\s+/g,' ');
-      opt.textContent = (i+1)+'. '+preview+(p.rawText.length>20?'…':'');
-      jumpSelect.appendChild(opt);
+  // ---------- Navigation helpers: jump to paragraph, bookmarks (per document) ----------
+  function goToPage(i){
+    if(state.pages.length === 0) return;
+    i = Math.max(0, Math.min(state.pages.length-1, i));
+    state.current = i;
+    if(state.expanded){
+      const el = pageWrapExpanded.querySelector('.exp-block[data-page-index="'+i+'"]');
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+      renderBookmarks();
+    } else {
+      renderPage();
+    }
+    scheduleAutoSave();
+  }
+
+  function updateBookmarkBtn(){
+    const page = state.pages[state.current];
+    const on = !!(page && page.bookmarked);
+    btnBookmark.textContent = on ? '★' : '☆';
+    btnBookmark.classList.toggle('on', on);
+    btnBookmark.title = on ? '북마크 해제' : '이 문단 북마크';
+    btnBookmark.disabled = !page;
+  }
+
+  function toggleBookmark(pageIdx){
+    const page = state.pages[pageIdx];
+    if(!page) return;
+    page.bookmarked = !page.bookmarked;
+    updateBookmarkBtn();
+    renderBookmarks();
+    scheduleAutoSave();
+  }
+
+  // Renders the active document's bookmarks into the right sidebar, the mobile drawer
+  // and the jump popup (all share the same markup).
+  function renderBookmarks(){
+    const containers = [bookmarkListDesktop, bookmarkListMobile, jumpBookmarkList].filter(Boolean);
+    const items = [];
+    state.pages.forEach((p, i)=>{ if(p.bookmarked) items.push(i); });
+    containers.forEach(container=>{
+      container.innerHTML = '';
+      if(items.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'small-note';
+        empty.textContent = state.pages.length ? '북마크가 없습니다. 상단 ☆ 버튼으로 추가하세요.' : '작업을 먼저 불러오세요.';
+        container.appendChild(empty);
+        return;
+      }
+      items.forEach(i=>{
+        const page = state.pages[i];
+        const row = document.createElement('div');
+        row.className = 'bookmark-item' + (i === state.current ? ' current' : '');
+        const label = document.createElement('span');
+        label.className = 'bookmark-item-label';
+        const num = document.createElement('span');
+        num.className = 'bookmark-item-num';
+        num.textContent = (i+1);
+        label.appendChild(num);
+        const preview = page.rawText.slice(0, 40).replace(/\s+/g, ' ');
+        label.appendChild(document.createTextNode(preview + (page.rawText.length > 40 ? '…' : '')));
+        row.appendChild(label);
+        const del = document.createElement('span');
+        del.className = 'bookmark-item-del';
+        del.textContent = '✕';
+        del.title = '북마크 해제';
+        del.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          toggleBookmark(i);
+        });
+        row.appendChild(del);
+        row.addEventListener('click', ()=>{
+          jumpModal.classList.remove('open');
+          goToPage(i);
+          closeTaskDrawerIfMobile();
+        });
+        container.appendChild(row);
+      });
     });
   }
+
+  function openJumpModal(){
+    if(state.pages.length === 0) return;
+    jumpNumInput.max = state.pages.length;
+    jumpNumInput.value = state.current + 1;
+    jumpTotalLabel.textContent = '/ ' + state.pages.length;
+    renderBookmarks();
+    jumpModal.classList.add('open');
+    jumpNumInput.focus();
+    jumpNumInput.select();
+  }
+  function doJumpFromInput(){
+    const n = parseInt(jumpNumInput.value, 10);
+    if(isNaN(n)) return;
+    jumpModal.classList.remove('open');
+    goToPage(n - 1);
+  }
+  pageIndicator.addEventListener('click', openJumpModal);
+  btnBookmark.addEventListener('click', ()=> toggleBookmark(state.current));
+  btnJumpGo.addEventListener('click', doJumpFromInput);
+  btnJumpClose.addEventListener('click', ()=> jumpModal.classList.remove('open'));
+  jumpNumInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); doJumpFromInput(); }
+    if(e.key === 'Escape') jumpModal.classList.remove('open');
+  });
+  jumpModal.addEventListener('click', (e)=>{
+    if(e.target === jumpModal) jumpModal.classList.remove('open');
+  });
 
   // ---------- Translation API ----------
   const translateCacheGlobal = new Map(); // key: lang+':'+dict+':'+text -> promise/result
@@ -1369,11 +1602,24 @@
   function renderPage(){
     if(state.pages.length === 0){
       pageIndicator.textContent = '0 / 0';
+      paraText.innerHTML = '<p class="small-note">불러온 글이 없습니다. 좌측 패널에서 글이나 자막을 불러와 주세요.</p>';
+      paraTranslationSlots.innerHTML = '';
+      notifPanelDesktop.innerHTML = '';
+      notifPanelMobile.innerHTML = '';
+      subtitleMeta.style.display = 'none';
+      savedTranslationsList.innerHTML = '';
+      userTranslationInput.value = '';
+      prevPageBtn.disabled = true;
+      nextPageBtn.disabled = true;
+      updateBookmarkBtn();
       return;
     }
     const page = state.pages[state.current];
     pageIndicator.textContent = (state.current+1)+' / '+state.pages.length;
-    jumpSelect.value = state.current;
+    prevPageBtn.disabled = state.current <= 0;
+    nextPageBtn.disabled = state.current >= state.pages.length-1;
+    updateBookmarkBtn();
+    renderBookmarks();
 
     // render paragraph text
     paraText.innerHTML = '';
@@ -1623,19 +1869,45 @@
   let pinIdCounter = 0;
   function genPinId(){ return 'pin_'+Date.now()+'_'+(pinIdCounter++); }
 
+  // Duplicate key: same word (case/spacing-insensitive) within the same document.
+  function pinKey(word){ return String(word).toLowerCase().replace(/\s+/g,' ').trim(); }
+  function isPinnedInActiveDoc(word){
+    const doc = getActiveDoc();
+    if(!doc) return false;
+    const k = pinKey(word);
+    return doc.pinnedTokens.some(t => pinKey(t.word) === k);
+  }
+
   function addPinnedToken(word, meaning, sentence, sentenceTranslation){
-    state.pinnedTokens.push({id: genPinId(), word, meaning, sentence, sentenceTranslation});
+    const doc = getActiveDoc();
+    if(!doc || isPinnedInActiveDoc(word)) return false;
+    doc.pinnedTokens.push({id: genPinId(), word, meaning, sentence, sentenceTranslation});
     renderPinnedTokens();
     scheduleAutoSave();
+    return true;
+  }
+
+  function setPinBtnState(btn){
+    if(btn.dataset.busy === '1') return;
+    const pinned = isPinnedInActiveDoc(btn.dataset.pinWord || '');
+    btn.textContent = pinned ? '✓' : '📌';
+    btn.disabled = pinned;
+    btn.classList.toggle('done', pinned);
+    btn.title = pinned ? '이미 고정된 단어입니다 (이 작업)' : '이 단어/구 고정 (Anki 내보내기용)';
+  }
+  function syncPinButtons(){
+    document.querySelectorAll('.pin-btn').forEach(setPinBtnState);
   }
 
   function makePinBtn(word, meaning, page, charStart, charEnd){
     const btn = document.createElement('button');
     btn.className = 'pin-btn';
-    btn.textContent = '📌';
-    btn.title = '이 단어/구 고정 (Anki 내보내기용)';
+    btn.dataset.pinWord = word;
     btn.setAttribute('aria-label', '단어 고정');
+    setPinBtnState(btn);
     btn.addEventListener('click', async ()=>{
+      if(isPinnedInActiveDoc(word)){ setPinBtnState(btn); return; }
+      btn.dataset.busy = '1';
       btn.disabled = true;
       try{
         const sentence = extractSentenceAround(page.rawText, charStart, charEnd);
@@ -1645,29 +1917,53 @@
           sentenceTranslation = await translatePlain(sentence, TOKEN_LANG);
           page.cache.set(sentCacheKey, sentenceTranslation);
         }
+        delete btn.dataset.busy;
         addPinnedToken(word, meaning, sentence, sentenceTranslation);
-        btn.textContent = '✓';
       }catch(e){
-        btn.disabled = false;
-        btn.textContent = '📌';
+        delete btn.dataset.busy;
         alert('고정 중 오류가 발생했습니다 (네트워크 문제일 수 있음).');
       }
+      setPinBtnState(btn);
     });
     return btn;
   }
 
+  // Pinned entries visible under the current scope: [{item, doc}]
+  function getScopeEntries(){
+    if(state.pinScope === 'all'){
+      const out = [];
+      state.docs.forEach(d => d.pinnedTokens.forEach(item => out.push({item, doc:d})));
+      return out;
+    }
+    const d = getActiveDoc();
+    return d ? d.pinnedTokens.map(item => ({item, doc:d})) : [];
+  }
+
   function renderPinnedTokens(){
     const containers = [pinnedTokensList, pinnedTokensListMobile].filter(Boolean);
+    const entries = getScopeEntries();
+    [pinScopeSelect, pinScopeSelectMobile].forEach(sel => { if(sel) sel.value = state.pinScope; });
     containers.forEach(container=>{
       container.innerHTML = '';
-      if(state.pinnedTokens.length === 0){
+      if(entries.length === 0){
         const empty = document.createElement('div');
         empty.className = 'small-note';
-        empty.textContent = '고정된 단어가 없습니다. 번역 팝업의 📌 버튼으로 추가하세요.';
+        empty.textContent = state.pinScope === 'all'
+          ? '고정된 단어가 없습니다. 번역 팝업의 📌 버튼으로 추가하세요.'
+          : '이 작업에 고정된 단어가 없습니다. 번역 팝업의 📌 버튼으로 추가하세요.';
         container.appendChild(empty);
         return;
       }
-      state.pinnedTokens.forEach(item=>{
+      let lastDocId = null;
+      entries.forEach(({item, doc: ownerDoc})=>{
+        if(state.pinScope === 'all' && ownerDoc.id !== lastDocId){
+          const label = document.createElement('div');
+          label.className = 'pinned-doc-label';
+          label.textContent = '📄 ' + (ownerDoc.title || '제목 없음');
+          container.appendChild(label);
+        }
+        lastDocId = ownerDoc.id;
+
         const div = document.createElement('div');
         div.className = 'pinned-item';
 
@@ -1680,6 +1976,13 @@
         meaning.textContent = item.meaning;
         displayWrap.appendChild(word);
         displayWrap.appendChild(meaning);
+        const dictParts = splitDictTokens(item.word);
+        if(dictParts.length){
+          const dictRow = document.createElement('div');
+          dictRow.className = 'pinned-dict-row';
+          dictParts.forEach(t => dictRow.appendChild(makeOpenRussianChip(t)));
+          displayWrap.appendChild(dictRow);
+        }
         div.appendChild(displayWrap);
 
         const editWrap = document.createElement('div');
@@ -1725,13 +2028,12 @@
           editWrap.style.display = isEditing ? 'flex' : 'none';
         });
         div.appendChild(edit);
-
         const del = document.createElement('span');
         del.className = 'del-x';
         del.textContent = '✕';
         del.title = '고정 해제';
         del.addEventListener('click', ()=>{
-          state.pinnedTokens = state.pinnedTokens.filter(p=>p.id!==item.id);
+          ownerDoc.pinnedTokens = ownerDoc.pinnedTokens.filter(p=>p.id!==item.id);
           renderPinnedTokens();
           scheduleAutoSave();
         });
@@ -1739,73 +2041,172 @@
         container.appendChild(div);
       });
     });
-    if(btnExportApkg) btnExportApkg.disabled = state.pinnedTokens.length === 0;
-    if(btnExportApkgMobile) btnExportApkgMobile.disabled = state.pinnedTokens.length === 0;
+    const noPins = entries.length === 0;
+    [btnExportApkg, btnExportApkgMobile, btnClearPinned, btnClearPinnedMobile].forEach(b=>{
+      if(b) b.disabled = noPins;
+    });
+    syncPinButtons();
   }
 
-  async function renderNotifications(){
-    const page = state.pages[state.current];
-    const selectedArr = [...page.selected];
-    notifPanelDesktop.innerHTML = '';
-    notifPanelMobile.innerHTML = '';
+  function clearPinnedTokens(){
+    const entries = getScopeEntries();
+    if(entries.length === 0) return;
+    const scopeText = state.pinScope === 'all' ? '모든 작업의' : '이 작업의';
+    if(!confirm(scopeText+' 고정된 단어 '+entries.length+'개를 모두 비울까요? (되돌릴 수 없습니다. 필요하면 먼저 .apkg로 내보내세요)')) return;
+    if(state.pinScope === 'all') state.docs.forEach(d => { d.pinnedTokens = []; });
+    else { const d = getActiveDoc(); if(d) d.pinnedTokens = []; }
+    renderPinnedTokens();
+    scheduleAutoSave();
+  }
+  if(btnClearPinned) btnClearPinned.addEventListener('click', clearPinnedTokens);
+  if(btnClearPinnedMobile) btnClearPinnedMobile.addEventListener('click', clearPinnedTokens);
+  [pinScopeSelect, pinScopeSelectMobile].forEach(sel=>{
+    if(!sel) return;
+    sel.addEventListener('change', ()=>{
+      state.pinScope = sel.value === 'all' ? 'all' : 'doc';
+      renderPinnedTokens();
+      scheduleAutoSave();
+    });
+  });
 
+  // ---------- Selected word / phrase popups ----------
+  // One implementation shared by page mode (desktop + mobile panels) and expanded mode.
+  // `containers` are the panels to fill; every panel gets its own block but the translation
+  // is fetched once. `onChange` re-renders the caller after a block's ✕ deselects its words,
+  // `retry` re-runs the whole render after a failed request.
+  function buildSelectionBlock(container, srcText, refKey, page, onChange){
+    const div = document.createElement('div');
+    div.className = 'notif-block';
+    const src = document.createElement('div');
+    src.className = 'src';
+    src.textContent = srcText;
+    const body = document.createElement('div');
+    body.className = 'body';
+    body.textContent = '불러오는 중...';
+    const close = document.createElement('span');
+    close.className = 'close-x';
+    close.textContent = '✕';
+    close.addEventListener('click', ()=>{
+      if(Array.isArray(refKey)) refKey.forEach(i=>page.selected.delete(i));
+      else page.selected.delete(refKey);
+      onChange();
+    });
+    div.appendChild(close);
+    div.appendChild(makeOpenRussianLink(srcText));
+    div.appendChild(src);
+    div.appendChild(body);
+    container.appendChild(div);
+    return body;
+  }
+
+  function fillSelectionBodyDict(body, result){
+    body.innerHTML = '';
+    if(result.dict && result.dict.length){
+      result.dict.forEach(entry=>{
+        const line = document.createElement('div');
+        line.className = 'pos-line';
+        const label = document.createElement('span');
+        label.className = 'pos-label';
+        label.textContent = '['+entry.pos+']';
+        line.appendChild(label);
+        line.appendChild(document.createTextNode(entry.terms.join(', ')));
+        body.appendChild(line);
+      });
+    } else {
+      body.textContent = result.plain || '(번역 없음)';
+    }
+  }
+
+  function setSelectionBodyError(body, retryFn){
+    body.innerHTML = '';
+    const msg = document.createElement('span');
+    msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+    msg.style.color = 'var(--danger)';
+    body.appendChild(msg);
+    if(retryFn) body.appendChild(makeRetryBtn(retryFn));
+  }
+
+  function renderSelectionPanel(page, containers, opts){
+    containers.forEach(c => { c.innerHTML = ''; });
+    if(!page) return;
+    const selectedArr = [...page.selected];
     if(selectedArr.length === 0) return;
 
+    const jobs = [];
     if(selectedArr.length === 1){
       const idx = selectedArr[0];
       const seg = getWordSegByIndex(page, idx);
-      const cacheKey = 'single:'+idx+':'+TOKEN_LANG;
-      const block = createNotifBlock(seg.text, '불러오는 중...', idx);
-      appendNotif(block);
-      let result = page.cache.get(cacheKey);
-      if(!result){
-        try{
-          result = await translateWithDict(seg.text);
-          page.cache.set(cacheKey, result);
-        }catch(err){
-          updateNotifError(block, err, ()=> renderNotifications());
-          return;
+      jobs.push({
+        text: seg.text,
+        refKey: idx,
+        cacheKey: 'single:'+idx+':'+TOKEN_LANG,
+        stillValid: ()=> page.selected.has(idx),
+        fetch: ()=> translateWithDict(seg.text),
+        show: (body, result)=>{
+          fillSelectionBodyDict(body, result);
+          body.appendChild(makePinBtn(seg.text, formatTokenMeaning(result), page, seg.charStart, seg.charEnd));
         }
-      }
-      if(!page.selected.has(idx)) return; // deselected while loading
-      updateNotifSingle(block, result, {page, word: seg.text, charStart: seg.charStart, charEnd: seg.charEnd});
-      return;
+      });
+    } else {
+      computeRuns(selectedArr).forEach(run=>{
+        const text = runText(page, run);
+        const startSeg = getWordSegByIndex(page, run[0]);
+        const endSeg = getWordSegByIndex(page, run[run.length-1]);
+        jobs.push({
+          text,
+          refKey: run,
+          cacheKey: 'run:'+run[0]+'-'+run[run.length-1]+':'+TOKEN_LANG,
+          stillValid: ()=> run.every(i=>page.selected.has(i)),
+          fetch: ()=> translatePlain(text, TOKEN_LANG),
+          show: (body, translated)=>{
+            body.textContent = translated || '(번역 없음)';
+            body.appendChild(makePinBtn(text, translated || '', page, startSeg.charStart, endSeg.charEnd));
+          }
+        });
+      });
     }
 
-    const runs = computeRuns(selectedArr);
-    for(const run of runs){
-      const text = runText(page, run);
-      const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+TOKEN_LANG;
-      const block = createNotifBlock(text, '불러오는 중...', run);
-      appendNotif(block);
+    jobs.forEach(job=>{
+      const bodies = containers.map(c => buildSelectionBlock(c, job.text, job.refKey, page, opts.onChange));
       (async ()=>{
-        let translated = page.cache.get(runKey);
-        if(!translated){
+        let result = page.cache.get(job.cacheKey);
+        if(!result){
           try{
-            translated = await translatePlain(text, TOKEN_LANG);
-            page.cache.set(runKey, translated);
+            result = await job.fetch();
+            page.cache.set(job.cacheKey, result);
           }catch(err){
-            updateNotifError(block, err, ()=> renderNotifications());
+            bodies.forEach(b => setSelectionBodyError(b, opts.retry));
             return;
           }
         }
-        const stillValid = run.every(i=>page.selected.has(i));
-        if(!stillValid) return;
-        const startSeg = getWordSegByIndex(page, run[0]);
-        const endSeg = getWordSegByIndex(page, run[run.length-1]);
-        updateNotifPlain(block, translated, {page, word:text, charStart:startSeg.charStart, charEnd:endSeg.charEnd});
+        if(!job.stillValid()) return; // deselected while loading
+        bodies.forEach(b => job.show(b, result));
       })();
-    }
+    });
   }
 
-  function appendNotif(block){
-    notifPanelDesktop.appendChild(block);
-    notifPanelMobile.appendChild(block.cloneNode(true));
-    // re-bind close on the clone
-    const clones = notifPanelMobile.querySelectorAll('.notif-block:last-child .close-x');
-    clones.forEach(x=>{
-      x.addEventListener('click', block._closeHandler);
+  function renderNotifications(){
+    renderSelectionPanel(state.pages[state.current], [notifPanelDesktop, notifPanelMobile], {
+      onChange: ()=> renderPage(),
+      retry: ()=> renderNotifications()
     });
+  }
+
+  // "кто-то" -> ["кто","то"], "по-русски быстро" -> ["по","русски","быстро"]
+  function splitDictTokens(text){
+    return String(text).split(/[\s\-\u2010-\u2015]+/)
+      .map(t => t.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, ''))
+      .filter(Boolean);
+  }
+  function makeOpenRussianChip(word){
+    const a = document.createElement('a');
+    a.className = 'pinned-dict-link';
+    a.href = 'https://en.openrussian.org/?search=' + encodeURIComponent(word);
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = '📖 ' + word;
+    a.title = 'OpenRussian 사전에서 "' + word + '" 검색';
+    return a;
   }
 
   function makeOpenRussianLink(word){
@@ -1818,93 +2219,6 @@
     a.title = 'OpenRussian 사전에서 검색';
     a.setAttribute('aria-label', 'OpenRussian 사전에서 검색');
     return a;
-  }
-
-  function createNotifBlock(srcText, bodyText, refKey){
-    const div = document.createElement('div');
-    div.className = 'notif-block';
-    const src = document.createElement('div');
-    src.className = 'src';
-    src.textContent = srcText;
-    const body = document.createElement('div');
-    body.className = 'body';
-    body.textContent = bodyText;
-    const close = document.createElement('span');
-    close.className = 'close-x';
-    close.textContent = '✕';
-    const handler = ()=>{
-      const page = state.pages[state.current];
-      if(Array.isArray(refKey)){
-        refKey.forEach(i=>page.selected.delete(i));
-      } else {
-        page.selected.delete(refKey);
-      }
-      renderPage();
-    };
-    close.addEventListener('click', handler);
-    div._closeHandler = handler;
-    div._bodyEl = body;
-    div.appendChild(close);
-    div.appendChild(makeOpenRussianLink(srcText));
-    div.appendChild(src);
-    div.appendChild(body);
-    return div;
-  }
-
-  function syncBothPanels(sourceBlock, updateFn){
-    updateFn(sourceBlock._bodyEl, sourceBlock);
-    // find matching clone in the other panel by src text + index among siblings
-    const parent = sourceBlock.parentElement;
-    const other = (parent === notifPanelDesktop) ? notifPanelMobile : notifPanelDesktop;
-    const idx = Array.from(parent.children).indexOf(sourceBlock);
-    const otherBlock = other.children[idx];
-    if(otherBlock){
-      const bodyEl = otherBlock.querySelector('.body');
-      if(bodyEl) updateFn(bodyEl, otherBlock);
-    }
-  }
-
-  function updateNotifSingle(block, result, pinCtx){
-    syncBothPanels(block, (bodyEl)=>{
-      bodyEl.innerHTML = '';
-      if(result.dict && result.dict.length){
-        result.dict.forEach(entry=>{
-          const line = document.createElement('div');
-          line.className = 'pos-line';
-          const label = document.createElement('span');
-          label.className = 'pos-label';
-          label.textContent = '['+entry.pos+']';
-          line.appendChild(label);
-          line.appendChild(document.createTextNode(entry.terms.join(', ')));
-          bodyEl.appendChild(line);
-        });
-      } else {
-        bodyEl.textContent = result.plain || '(번역 없음)';
-      }
-      if(pinCtx){
-        bodyEl.appendChild(makePinBtn(pinCtx.word, formatTokenMeaning(result), pinCtx.page, pinCtx.charStart, pinCtx.charEnd));
-      }
-    });
-  }
-
-  function updateNotifPlain(block, text, pinCtx){
-    syncBothPanels(block, (bodyEl)=>{
-      bodyEl.textContent = text || '(번역 없음)';
-      if(pinCtx){
-        bodyEl.appendChild(makePinBtn(pinCtx.word, text || '', pinCtx.page, pinCtx.charStart, pinCtx.charEnd));
-      }
-    });
-  }
-
-  function updateNotifError(block, err, retryFn){
-    syncBothPanels(block, (bodyEl)=>{
-      bodyEl.innerHTML = '';
-      const msg = document.createElement('span');
-      msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
-      msg.style.color = 'var(--danger)';
-      bodyEl.appendChild(msg);
-      if(retryFn) bodyEl.appendChild(makeRetryBtn(retryFn));
-    });
   }
 
   // Renders one block per translation slot configured for the active document, each
@@ -1973,100 +2287,11 @@
     scheduleAutoSave();
   }
 
-  async function renderExpandedNotifPanel(page, pageIdx, container){
-    container.innerHTML = '';
-    const selectedArr = [...page.selected];
-    if(selectedArr.length === 0) return;
-
-    function buildBlock(srcText, refKey){
-      const div = document.createElement('div');
-      div.className = 'notif-block';
-      const src = document.createElement('div');
-      src.className = 'src';
-      src.textContent = srcText;
-      const body = document.createElement('div');
-      body.className = 'body';
-      body.textContent = '불러오는 중...';
-      const close = document.createElement('span');
-      close.className = 'close-x';
-      close.textContent = '✕';
-      close.addEventListener('click', ()=>{
-        if(Array.isArray(refKey)) refKey.forEach(i=>page.selected.delete(i));
-        else page.selected.delete(refKey);
-        rerenderExpandedBlock(pageIdx);
-      });
-      div.appendChild(close);
-      div.appendChild(makeOpenRussianLink(srcText));
-      div.appendChild(src);
-      div.appendChild(body);
-      container.appendChild(div);
-      return body;
-    }
-
-    if(selectedArr.length === 1){
-      const idx = selectedArr[0];
-      const seg = getWordSegByIndex(page, idx);
-      const body = buildBlock(seg.text, idx);
-      const cacheKey = 'single:'+idx+':'+TOKEN_LANG;
-      let result = page.cache.get(cacheKey);
-      if(!result){
-        try{ result = await translateWithDict(seg.text); page.cache.set(cacheKey, result); }
-        catch(err){
-          body.innerHTML = '';
-          const msg = document.createElement('span');
-          msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
-          msg.style.color = 'var(--danger)';
-          body.appendChild(msg);
-          body.appendChild(makeRetryBtn(()=> renderExpandedNotifPanel(page, pageIdx, container)));
-          return;
-        }
-      }
-      if(!page.selected.has(idx)) return;
-      if(result.dict && result.dict.length){
-        body.innerHTML = '';
-        result.dict.forEach(entry=>{
-          const line = document.createElement('div');
-          line.className = 'pos-line';
-          const label = document.createElement('span');
-          label.className = 'pos-label';
-          label.textContent = '['+entry.pos+']';
-          line.appendChild(label);
-          line.appendChild(document.createTextNode(entry.terms.join(', ')));
-          body.appendChild(line);
-        });
-      } else {
-        body.textContent = result.plain || '(번역 없음)';
-      }
-      body.appendChild(makePinBtn(seg.text, formatTokenMeaning(result), page, seg.charStart, seg.charEnd));
-      return;
-    }
-
-    const runs = computeRuns(selectedArr);
-    for(const run of runs){
-      const text = runText(page, run);
-      const body = buildBlock(text, run);
-      const runKey = 'run:'+run[0]+'-'+run[run.length-1]+':'+TOKEN_LANG;
-      (async ()=>{
-        let translated = page.cache.get(runKey);
-        if(!translated){
-          try{ translated = await translatePlain(text, TOKEN_LANG); page.cache.set(runKey, translated); }
-          catch(err){
-            body.innerHTML = '';
-            const msg = document.createElement('span');
-            msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
-            msg.style.color = 'var(--danger)';
-            body.appendChild(msg);
-            body.appendChild(makeRetryBtn(()=> renderExpandedNotifPanel(page, pageIdx, container)));
-            return;
-          }
-        }
-        if(!run.every(i=>page.selected.has(i))) return;
-        body.textContent = translated || '(번역 없음)';
-        const startSeg = getWordSegByIndex(page, run[0]);
-        const endSeg = getWordSegByIndex(page, run[run.length-1]);
-        body.appendChild(makePinBtn(text, translated || '', page, startSeg.charStart, endSeg.charEnd));
-      })();
-    }
+  function renderExpandedNotifPanel(page, pageIdx, container){
+    renderSelectionPanel(page, [container], {
+      onChange: ()=> rerenderExpandedBlock(pageIdx),
+      retry: ()=> renderExpandedNotifPanel(page, pageIdx, container)
+    });
   }
 
   function rerenderExpandedBlock(pageIdx){
@@ -2088,7 +2313,23 @@
     numEl.textContent = '문단 '+(i+1)+(page.timecode ? '  ·  '+page.timecode : '');
     numEl.title = '클릭하면 이 문단의 페이지 모드로 이동합니다';
     numEl.addEventListener('click', ()=> jumpToPageFromExpanded(i));
-    wrap.appendChild(numEl);
+    const headEl = document.createElement('div');
+    headEl.className = 'exp-head';
+    headEl.appendChild(numEl);
+    const bmBtn = document.createElement('button');
+    bmBtn.className = 'exp-bookmark' + (page.bookmarked ? ' on' : '');
+    bmBtn.textContent = page.bookmarked ? '★' : '☆';
+    bmBtn.title = page.bookmarked ? '북마크 해제' : '이 문단 북마크';
+    bmBtn.addEventListener('click', ()=>{
+      page.bookmarked = !page.bookmarked;
+      bmBtn.textContent = page.bookmarked ? '★' : '☆';
+      bmBtn.classList.toggle('on', page.bookmarked);
+      bmBtn.title = page.bookmarked ? '북마크 해제' : '이 문단 북마크';
+      renderBookmarks();
+      scheduleAutoSave();
+    });
+    headEl.appendChild(bmBtn);
+    wrap.appendChild(headEl);
 
     const textEl = document.createElement('div');
     textEl.className = 'para-text' + (page.timecode ? ' preserve-linebreaks' : '');
@@ -2248,28 +2489,25 @@
     state.expanded = val;
     const label = val ? '페이지 모드로' : '전체 펼치기';
     btnToggleExpand.querySelector('.btn-label').textContent = label;
-    btnToggleExpandMain.textContent = label;
     pageWrapSingle.style.display = val ? 'none' : '';
     pageNav.style.display = val ? 'none' : '';
+    prevPageBtn.style.display = val ? 'none' : '';
+    nextPageBtn.style.display = val ? 'none' : '';
     pageWrapExpanded.style.display = val ? '' : 'none';
     if(val) renderExpandedView(); else renderPage();
     scheduleAutoSave();
   }
-  btnToggleExpand.addEventListener('click', ()=> setExpanded(!state.expanded));
-  btnToggleExpandMain.addEventListener('click', ()=> setExpanded(!state.expanded));
+  btnToggleExpand.addEventListener('click', ()=>{
+    setExpanded(!state.expanded);
+    closeDrawerIfMobile();
+  });
 
   // ---------- Navigation ----------
   prevPageBtn.addEventListener('click', ()=>{
-    if(state.current > 0){ state.current--; renderPage(); }
+    if(state.current > 0){ state.current--; renderPage(); scheduleAutoSave(); }
   });
   nextPageBtn.addEventListener('click', ()=>{
-    if(state.current < state.pages.length-1){ state.current++; renderPage(); }
-  });
-  jumpSelect.addEventListener('change', ()=>{
-    state.current = parseInt(jumpSelect.value, 10);
-    if(state.expanded) setExpanded(false);
-    else renderPage();
-    closeDrawerIfMobile();
+    if(state.current < state.pages.length-1){ state.current++; renderPage(); scheduleAutoSave(); }
   });
 
   // ---------- Controls: paste / load ----------
@@ -2546,9 +2784,10 @@
   }
 
   async function doExportApkg(){
-    if(state.pinnedTokens.length === 0) return;
+    const entries = getScopeEntries();
+    if(entries.length === 0) return;
     const btns = [btnExportApkg, btnExportApkgMobile].filter(Boolean);
-    btns.forEach(b=>{ b.disabled = true; b.dataset.origText = b.textContent; b.textContent = '불러오는 중...'; });
+    btns.forEach(b=>{ b.disabled = true; b.dataset.origText = b.textContent; b.textContent = '⏳'; });
     try{
       await ensureAnkiLibs();
       const model = new Model({
@@ -2563,17 +2802,19 @@
         }]
       });
       const doc = getActiveDoc();
-      const deck = new Deck(Date.now(), (doc && doc.title ? doc.title : '러시아어 읽기') + ' 단어');
-      state.pinnedTokens.forEach(item=>{
+      const allScope = state.pinScope === 'all';
+      const deckBase = allScope ? '러시아어 읽기 (전체)' : (doc && doc.title ? doc.title : '러시아어 읽기');
+      const deck = new Deck(Date.now(), deckBase + ' 단어');
+      entries.forEach(({item})=>{
         deck.addNote(model.note([item.word, item.meaning, item.sentence, item.sentenceTranslation]));
       });
       const pkg = new Package();
       pkg.addDeck(deck);
-      await pkg.writeToFile(sanitizeFileName(doc ? doc.title : 'russian-vocab')+'.apkg');
+      await pkg.writeToFile(sanitizeFileName(allScope ? 'russian-vocab-all' : (doc ? doc.title : 'russian-vocab'))+'.apkg');
     }catch(e){
       alert('Anki 파일 생성 중 오류가 발생했습니다: '+(e && e.message ? e.message : e));
     } finally {
-      btns.forEach(b=>{ b.disabled = state.pinnedTokens.length === 0; b.textContent = b.dataset.origText || '📤 .apkg'; });
+      btns.forEach(b=>{ b.disabled = getScopeEntries().length === 0; b.textContent = b.dataset.origText || '⬇'; });
     }
   }
   if(btnExportApkg) btnExportApkg.addEventListener('click', doExportApkg);
@@ -2837,7 +3078,7 @@
       activeDocId: state.activeDocId,
       expanded: state.expanded,
       settings: state.settings,
-      pinnedTokens: state.pinnedTokens,
+      pinScope: state.pinScope,
       docs: state.docs.map(doc => ({
         id: doc.id,
         title: doc.title,
@@ -2846,9 +3087,11 @@
         subtitleBaseName: doc.subtitleBaseName,
         translationSlots: doc.translationSlots,
         sourceLang: doc.sourceLang,
+        pinnedTokens: doc.pinnedTokens,
         pages: doc.pages.map(p => ({
           rawText: p.rawText,
           selected: [...p.selected],
+          bookmarked: !!p.bookmarked,
           paraTranslations: p.paraTranslations,
           userTranslations: p.userTranslations,
           userDraft: p.userDraft,
@@ -2887,7 +3130,7 @@
     // Restores automatically without a confirmation prompt — use the "저장 삭제" button
     // in the left panel if you'd rather start fresh.
 
-    state.pinnedTokens = Array.isArray(data.pinnedTokens) ? data.pinnedTokens : [];
+    state.pinScope = data.pinScope === 'all' ? 'all' : 'doc';
     state.docs = data.docs.map(sd=>{
       const pages = (sd.pages||[]).map(sp=>{
         const {segments, wordCount} = tokenizeParagraph(sp.rawText);
@@ -2895,6 +3138,7 @@
           rawText: sp.rawText,
           segments, wordCount,
           selected: new Set(sp.selected || []),
+          bookmarked: !!sp.bookmarked,
           cache: new Map(),
           paraTranslations: (sp.paraTranslations && typeof sp.paraTranslations === 'object') ? sp.paraTranslations : {},
           userTranslations: sp.userTranslations || [],
@@ -2912,13 +3156,20 @@
         translationSlots: (Array.isArray(sd.translationSlots) && sd.translationSlots.length)
           ? sd.translationSlots.map(s => ({id: s.id || genSlotId(), lang: s.lang || 'ko'}))
           : defaultTranslationSlots(),
-        sourceLang: sd.sourceLang || 'ru'
+        sourceLang: sd.sourceLang || 'ru',
+        pinnedTokens: Array.isArray(sd.pinnedTokens) ? sd.pinnedTokens : []
       };
     });
     state.activeDocId = data.docs.some(d=>d.id===data.activeDocId) ? data.activeDocId : (state.docs[0] ? state.docs[0].id : null);
+    // Saves made before pinned words became per-document kept one global list: move it into the
+    // active document so nothing is lost.
+    if(Array.isArray(data.pinnedTokens) && data.pinnedTokens.length && !data.docs.some(d => Array.isArray(d.pinnedTokens))){
+      const target = getActiveDoc();
+      if(target) target.pinnedTokens = data.pinnedTokens;
+    }
     if(data.settings) Object.assign(state.settings, data.settings);
 
-    buildJumpSelect();
+    renderBookmarks();
     applySettingsToDOM();
     renderTaskLists();
     renderTranslationSlotsUI();

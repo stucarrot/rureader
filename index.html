@@ -167,6 +167,11 @@
   .pin-btn:hover{border-color:var(--accent);}
   .pin-btn:disabled{opacity:.6;cursor:default;}
   .pin-btn.done{color:var(--accent2);border-color:var(--accent2);opacity:1;}
+  .or-entry{margin:6px 0 4px;}
+  .or-lemma{font-family:var(--ru-font);font-weight:700;}
+  .or-forms{font-size:12px;color:var(--muted);margin:1px 0;}
+  .or-token{font-size:12px;font-weight:700;color:var(--accent2);margin-top:6px;}
+  .or-src{font-size:10px;color:var(--muted);margin-top:4px;}
   .pinned-doc-label{
     font-size:11px;color:var(--accent2);font-weight:700;
     margin:8px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -623,6 +628,14 @@
       </div>
     </div>
     <div class="ctrl-group">
+      <h4>단어 사전</h4>
+      <select id="tokenDictSelect" aria-label="선택 단어 조회 방식">
+        <option value="google">구글 번역 (기존)</option>
+        <option value="openrussian">OpenRussian 데이터</option>
+      </select>
+      <div class="small-note">OpenRussian: 품사·성별·뜻 전체(영어). 변화형도 원형으로 찾습니다. 처음 조회할 때 사전 데이터(약 5MB)를 내려받습니다.</div>
+    </div>
+    <div class="ctrl-group">
       <h4>폰트 / 크기</h4>
       <div class="ctrl-row">
         <span class="small-note" style="width:100%;">러시아어 본문</span>
@@ -861,7 +874,8 @@
       koFont: "'Noto Sans KR', sans-serif",
       ruSize: 20,
       koSize: 16,
-      dark: false
+      dark: false,
+      tokenDict: 'google'   // selected-word lookup source: 'google' | 'openrussian'
     }
   };
 
@@ -944,6 +958,7 @@
     koFontSelect.value = state.settings.koFont;
     ruSizeRange.value = state.settings.ruSize;
     koSizeRange.value = state.settings.koSize;
+    tokenDictSelect.value = state.settings.tokenDict === 'openrussian' ? 'openrussian' : 'google';
   }
 
   // ---------- DOM refs ----------
@@ -975,6 +990,7 @@
   const prevPageBtn = document.getElementById('prevPage');
   const nextPageBtn = document.getElementById('nextPage');
   const ruFontSelect = document.getElementById('ruFontSelect');
+  const tokenDictSelect = document.getElementById('tokenDictSelect');
   const koFontSelect = document.getElementById('koFontSelect');
   const ruSizeRange = document.getElementById('ruSizeRange');
   const koSizeRange = document.getElementById('koSizeRange');
@@ -1835,6 +1851,246 @@
     return page.rawText.slice(startSeg.charStart, endSeg.charEnd);
   }
 
+  // ---------- OpenRussian dataset lookup (v4.3) ----------
+  // Data: https://github.com/Badestrand/russian-dictionary (CC BY-SA 4.0), loaded lazily on first
+  // use. All forms of every lemma go into ONE big string ("|форма~тег|форма~тег|...\n" per lemma),
+  // so a lookup is a native indexOf over that string instead of a huge Map (≈40MB vs ≈200MB heap).
+  // To extend: add columns to `extra` in OR_FILES (they land in entry.x) and render them in
+  // orMetaLabel()/buildOREntryEl(); sentences are not in these CSVs (see handover).
+  const OR_DATA_SHA = '50e210c4803237779cb562bc1abcea529066031c';
+  const OR_FILES = [
+    {file:'nouns', pos:'noun', extra:['gender','animate','indeclinable','sg_only','pl_only','partner']},
+    {file:'verbs', pos:'verb', extra:['aspect','partner']},
+    {file:'adjectives', pos:'adjective', extra:[]},
+    {file:'others', pos:'other', extra:[]}
+  ];
+  const OR_SOURCES = file => [
+    'https://cdn.jsdelivr.net/gh/Badestrand/russian-dictionary@'+OR_DATA_SHA+'/'+file+'.csv',
+    'https://raw.githubusercontent.com/Badestrand/russian-dictionary/'+OR_DATA_SHA+'/'+file+'.csv'
+  ];
+  const OR_MAX_ENTRIES = 3;
+  const OR_POS_ORDER = {noun:0, verb:1, adjective:2, other:3};
+  const OR_POS_LABEL = {noun:'명사', verb:'동사', adjective:'형용사', other:'기타'};
+  const OR_CASE = {nom:'주격', gen:'속격', dat:'여격', acc:'대격', inst:'조격', prep:'전치격'};
+  const OR_GENDER = {m:'남성', f:'여성', n:'중성', pl:'복수'};
+  const OR = { lemmas:[], hay:'', starts:[], tagNames:['lemma'], promise:null };
+
+  function isORMode(){ return state.settings.tokenDict === 'openrussian'; }
+  function foldWord(w){
+    return String(w).toLowerCase().replace(/['́’*|~]/g,'').replace(/ё/g,'е').trim();
+  }
+  function orTagLabel(n){
+    let m;
+    if((m = /^(sg|pl)_(nom|gen|dat|acc|inst|prep)$/.exec(n))) return (m[1]==='sg' ? '단수 ' : '복수 ')+OR_CASE[m[2]];
+    if((m = /^decl_(m|f|n|pl)_(nom|gen|dat|acc|inst|prep)$/.exec(n))) return OR_GENDER[m[1]]+' '+OR_CASE[m[2]];
+    if((m = /^short_(m|f|n|pl)$/.exec(n))) return '단어미형 '+OR_GENDER[m[1]];
+    if(n === 'comparative') return '비교급';
+    if(n === 'superlative') return '최상급';
+    if((m = /^past_(m|f|n|pl)$/.exec(n))) return '과거 '+OR_GENDER[m[1]];
+    if((m = /^presfut_(sg|pl)([123])$/.exec(n))) return '현재·미래 '+m[2]+'인칭 '+(m[1]==='sg' ? '단수' : '복수');
+    if((m = /^imperative_(sg|pl)$/.exec(n))) return '명령형 '+(m[1]==='sg' ? '단수' : '복수');
+    return n;
+  }
+
+  async function fetchOpenRussianCsv(file){
+    let lastErr = null;
+    for(const url of OR_SOURCES(file)){
+      try{
+        const res = await fetch(url);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        return await res.text();
+      }catch(e){ lastErr = e; }
+    }
+    throw lastErr || new Error('사전 데이터를 불러오지 못했습니다');
+  }
+
+  function loadOpenRussian(){
+    if(OR.promise) return OR.promise;
+    OR.promise = (async ()=>{
+      const texts = await Promise.all(OR_FILES.map(f => fetchOpenRussianCsv(f.file)));
+      const lemmas = [], starts = [], parts = [];
+      const tagNames = ['lemma'], tagIds = new Map();
+      const tagId = name => {
+        let id = tagIds.get(name);
+        if(id === undefined){ id = tagNames.length; tagNames.push(name); tagIds.set(name, id); }
+        return id;
+      };
+      let offset = 0;
+      for(let fi = 0; fi < OR_FILES.length; fi++){
+        const spec = OR_FILES[fi];
+        const lines = texts[fi].split('\n');
+        const head = lines[0].replace(/\r$/, '').split('\t');
+        const iBare = head.indexOf('bare'), iAcc = head.indexOf('accented'), iEn = head.indexOf('translations_en');
+        const formCols = [];
+        head.forEach((h, i)=>{
+          if(/^(sg_|pl_|decl_|short_|past_|presfut_|imperative_)/.test(h) && h !== 'sg_only' && h !== 'pl_only') formCols.push([tagId(h), i]);
+          else if(h === 'comparative' || h === 'superlative') formCols.push([tagId(h), i]);
+        });
+        const extraCols = spec.extra.map(n => [n, head.indexOf(n)]).filter(([, i]) => i >= 0);
+        for(let li = 1; li < lines.length; li++){
+          let line = lines[li];
+          if(line.charCodeAt(line.length-1) === 13) line = line.slice(0, -1);
+          const r = line.split('\t');
+          const bare = r[iBare];
+          if(!bare) continue;
+          const rec = {bare, accented: r[iAcc] || bare, pos: spec.pos, en: r[iEn] || '', rank: li, x: null};
+          for(const [n, i] of extraCols){ if(r[i]){ if(!rec.x) rec.x = {}; rec.x[n] = r[i]; } }
+          lemmas.push(rec);
+          const forms = [foldWord(bare)+'~0'];
+          for(const [tid, i] of formCols){
+            const v = r[i];
+            if(!v) continue;
+            for(const w of v.split(/[,;\/]/)){ const k = foldWord(w); if(k) forms.push(k+'~'+tid); }
+          }
+          const text = '|'+forms.join('|')+'|\n';
+          starts.push(offset);
+          offset += text.length;
+          parts.push(text);
+        }
+        await new Promise(res => setTimeout(res, 0)); // keep the UI responsive between files
+      }
+      OR.lemmas = lemmas; OR.starts = starts; OR.tagNames = tagNames; OR.hay = parts.join('');
+    })().catch(err=>{ OR.promise = null; throw err; }); // allow a retry
+    return OR.promise;
+  }
+
+  function orLemmaAt(pos){
+    let lo = 0, hi = OR.starts.length - 1;
+    while(lo < hi){
+      const mid = (lo + hi + 1) >> 1;
+      if(OR.starts[mid] <= pos) lo = mid; else hi = mid - 1;
+    }
+    return lo;
+  }
+
+  // Entries (max OR_MAX_ENTRIES) whose lemma or any inflected form equals `token` (ё/е-insensitive).
+  function orFindEntries(token){
+    const k = foldWord(token);
+    if(!k) return [];
+    const needle = '|'+k+'~';
+    const hits = new Map(); // lemma index -> Set(tag ids)
+    let p = OR.hay.indexOf(needle);
+    while(p !== -1){
+      const li = orLemmaAt(p);
+      const tStart = p + needle.length;
+      const tEnd = OR.hay.indexOf('|', tStart);
+      const tid = parseInt(OR.hay.slice(tStart, tEnd), 10);
+      let set = hits.get(li);
+      if(!set){ set = new Set(); hits.set(li, set); }
+      set.add(tid);
+      p = OR.hay.indexOf(needle, tEnd);
+    }
+    const out = [];
+    hits.forEach((tids, li)=>{
+      const rec = OR.lemmas[li];
+      const tags = [];
+      tids.forEach(t => { if(t !== 0){ const lab = orTagLabel(OR.tagNames[t]); if(!tags.includes(lab)) tags.push(lab); } });
+      out.push({bare: rec.bare, accented: rec.accented, pos: rec.pos, en: rec.en, x: rec.x, rank: rec.rank,
+                exact: foldWord(rec.bare) === k, tags});
+    });
+    out.sort((a, b)=> (a.exact === b.exact ? 0 : a.exact ? -1 : 1) || (a.rank - b.rank) || (OR_POS_ORDER[a.pos] - OR_POS_ORDER[b.pos]));
+    return out.slice(0, OR_MAX_ENTRIES);
+  }
+
+  // Looks the token up as a whole first; if nothing is found and it contains hyphens/spaces,
+  // each part is looked up separately. Result: {groups:[{token, entries:[...]}]}.
+  async function orLookup(token){
+    await loadOpenRussian();
+    const whole = orFindEntries(token);
+    if(whole.length) return {groups: [{token, entries: whole}]};
+    const parts = splitDictTokens(token);
+    if(parts.length > 1) return {groups: parts.map(t => ({token: t, entries: orFindEntries(t)}))};
+    return {groups: [{token, entries: []}]};
+  }
+
+  function orStress(a){ return String(a).replace(/'/g, '́'); }
+  function orMetaLabel(e){
+    const bits = [OR_POS_LABEL[e.pos] || e.pos];
+    const x = e.x || {};
+    if(e.pos === 'noun'){
+      if(x.gender) bits.push(OR_GENDER[x.gender] || x.gender);
+      if(x.animate === '1') bits.push('유정'); else if(x.animate === '0') bits.push('무정');
+      if(x.indeclinable === '1') bits.push('불변화');
+      if(x.sg_only === '1') bits.push('단수만');
+      if(x.pl_only === '1') bits.push('복수만');
+    } else if(e.pos === 'verb' && x.aspect){
+      bits.push(x.aspect === 'imperfective' ? '불완료상' : x.aspect === 'perfective' ? '완료상' : x.aspect);
+    }
+    return bits.join(' · ');
+  }
+  function orSummary(result){
+    const multi = result.groups.length > 1;
+    const out = [];
+    result.groups.forEach(g=>{
+      if(!g.entries.length) return;
+      const e = g.entries[0];
+      out.push((multi ? g.token+': ' : '')+'['+orMetaLabel(e)+'] '+e.en);
+    });
+    return out.join(' ; ');
+  }
+
+  function buildOREntryEl(e){
+    const wrap = document.createElement('div');
+    wrap.className = 'or-entry';
+    const head = document.createElement('div');
+    const lemma = document.createElement('span');
+    lemma.className = 'or-lemma';
+    lemma.textContent = orStress(e.accented);
+    const meta = document.createElement('span');
+    meta.className = 'pos-label';
+    meta.style.marginLeft = '6px';
+    meta.textContent = '['+orMetaLabel(e)+']';
+    head.appendChild(lemma);
+    head.appendChild(meta);
+    wrap.appendChild(head);
+    if(!e.exact && e.tags.length){
+      const f = document.createElement('div');
+      f.className = 'or-forms';
+      f.textContent = '형태: '+e.tags.slice(0, 4).join(', ');
+      wrap.appendChild(f);
+    }
+    const en = document.createElement('div');
+    en.className = 'pos-line';
+    en.textContent = e.en || '(뜻 없음)';
+    wrap.appendChild(en);
+    if(e.x && e.x.partner){
+      const pt = document.createElement('div');
+      pt.className = 'or-forms';
+      pt.textContent = '짝: '+e.x.partner;
+      wrap.appendChild(pt);
+    }
+    return wrap;
+  }
+
+  function fillORResult(body, result){
+    body.innerHTML = '';
+    const multi = result.groups.length > 1;
+    let any = false;
+    result.groups.forEach(g=>{
+      if(multi){
+        const t = document.createElement('div');
+        t.className = 'or-token';
+        t.textContent = g.token;
+        body.appendChild(t);
+      }
+      if(!g.entries.length){
+        const none = document.createElement('div');
+        none.className = 'small-note';
+        none.textContent = '결과 없음';
+        body.appendChild(none);
+        return;
+      }
+      any = true;
+      g.entries.forEach(e => body.appendChild(buildOREntryEl(e)));
+    });
+    if(any){
+      const src = document.createElement('div');
+      src.className = 'or-src';
+      src.textContent = '출처: OpenRussian.org (CC BY-SA 4.0)';
+      body.appendChild(src);
+    }
+  }
+
   // ---------- Small reusable UI helpers: retry (on failure) and pin (for Anki export) ----------
   function makeRetryBtn(onClick){
     const btn = document.createElement('button');
@@ -1878,10 +2134,10 @@
     return doc.pinnedTokens.some(t => pinKey(t.word) === k);
   }
 
-  function addPinnedToken(word, meaning, sentence, sentenceTranslation){
+  function addPinnedToken(word, meaning, sentence, sentenceTranslation, dictGroups){
     const doc = getActiveDoc();
     if(!doc || isPinnedInActiveDoc(word)) return false;
-    doc.pinnedTokens.push({id: genPinId(), word, meaning, sentence, sentenceTranslation});
+    doc.pinnedTokens.push({id: genPinId(), word, meaning, sentence, sentenceTranslation, dict: dictGroups || undefined});
     renderPinnedTokens();
     scheduleAutoSave();
     return true;
@@ -1899,7 +2155,7 @@
     document.querySelectorAll('.pin-btn').forEach(setPinBtnState);
   }
 
-  function makePinBtn(word, meaning, page, charStart, charEnd){
+  function makePinBtn(word, meaning, page, charStart, charEnd, dictGroups){
     const btn = document.createElement('button');
     btn.className = 'pin-btn';
     btn.dataset.pinWord = word;
@@ -1918,7 +2174,7 @@
           page.cache.set(sentCacheKey, sentenceTranslation);
         }
         delete btn.dataset.busy;
-        addPinnedToken(word, meaning, sentence, sentenceTranslation);
+        addPinnedToken(word, meaning, sentence, sentenceTranslation, dictGroups);
       }catch(e){
         delete btn.dataset.busy;
         alert('고정 중 오류가 발생했습니다 (네트워크 문제일 수 있음).');
@@ -2117,10 +2373,10 @@
     }
   }
 
-  function setSelectionBodyError(body, retryFn){
+  function setSelectionBodyError(body, retryFn, text){
     body.innerHTML = '';
     const msg = document.createElement('span');
-    msg.textContent = '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
+    msg.textContent = text || '번역 요청 실패 (네트워크/CORS 문제일 수 있음)';
     msg.style.color = 'var(--danger)';
     body.appendChild(msg);
     if(retryFn) body.appendChild(makeRetryBtn(retryFn));
@@ -2133,7 +2389,24 @@
     if(selectedArr.length === 0) return;
 
     const jobs = [];
-    if(selectedArr.length === 1){
+    if(isORMode()){
+      // OpenRussian mode: every selected word is looked up on its own (no phrase translation).
+      selectedArr.forEach(idx=>{
+        const seg = getWordSegByIndex(page, idx);
+        jobs.push({
+          text: seg.text,
+          refKey: idx,
+          cacheKey: 'or:'+idx,
+          stillValid: ()=> page.selected.has(idx),
+          fetch: ()=> orLookup(seg.text),
+          errorMsg: '사전 데이터 불러오기 실패 (네트워크/CDN 문제일 수 있음)',
+          show: (body, result)=>{
+            fillORResult(body, result);
+            body.appendChild(makePinBtn(seg.text, orSummary(result), page, seg.charStart, seg.charEnd, result.groups));
+          }
+        });
+      });
+    } else if(selectedArr.length === 1){
       const idx = selectedArr[0];
       const seg = getWordSegByIndex(page, idx);
       jobs.push({
@@ -2175,7 +2448,7 @@
             result = await job.fetch();
             page.cache.set(job.cacheKey, result);
           }catch(err){
-            bodies.forEach(b => setSelectionBodyError(b, opts.retry));
+            bodies.forEach(b => setSelectionBodyError(b, opts.retry, job.errorMsg));
             return;
           }
         }
@@ -2201,7 +2474,7 @@
   function makeOpenRussianChip(word){
     const a = document.createElement('a');
     a.className = 'pinned-dict-link';
-    a.href = 'https://en.openrussian.org/?search=' + encodeURIComponent(word);
+    a.href = 'https://en.openrussian.org/?search=' + encodeURIComponent(word.toLowerCase());
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
     a.textContent = '📖 ' + word;
@@ -2608,6 +2881,12 @@
   });
 
   // ---------- Controls: font / size / lang / dark ----------
+  tokenDictSelect.addEventListener('change', ()=>{
+    state.settings.tokenDict = tokenDictSelect.value === 'openrussian' ? 'openrussian' : 'google';
+    if(isORMode()) loadOpenRussian().catch(()=>{}); // warm up so the first click is fast
+    scheduleAutoSave();
+    if(state.expanded) renderExpandedView(); else renderPage();
+  });
   ruFontSelect.addEventListener('change', ()=>{
     state.settings.ruFont = ruFontSelect.value;
     applySettingsToDOM(); saveSettings();
@@ -2758,7 +3037,7 @@
   // ---------- Anki (.apkg) export for pinned words ----------
   // Loaded lazily on first export click, since these are somewhat heavy (sql.js WASM).
   // Uses genanki-js (https://github.com/krmanik/genanki-js), which itself depends on
-  // JSZip, FileSaver.js and sql.js — all pulled from public CDNs at runtime.
+  // sql.js and genanki-js — pulled from public CDNs at runtime.
   let ankiLibsPromise = null;
   function loadScript(src){
     return new Promise((resolve, reject)=>{
@@ -2769,18 +3048,67 @@
       document.head.appendChild(s);
     });
   }
+  // v4.2: genanki-js ships as an ES module (its dist file has import/export statements), so it
+  // cannot be loaded with a classic <script> tag. It is imported dynamically from jsDelivr's
+  // "+esm" build instead, which also bundles its dependencies (JSZip, FileSaver, ...). Only
+  // sql.js (a UMD build providing the global initSqlJs) is still loaded as a plain script.
+  const SQLJS_BASE = 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/';
+  const GENANKI_ESM = 'https://cdn.jsdelivr.net/npm/genanki-js@2.0.0/+esm';
   function ensureAnkiLibs(){
     if(ankiLibsPromise) return ankiLibsPromise;
     ankiLibsPromise = (async ()=>{
-      await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js');
-      await loadScript('https://cdn.jsdelivr.net/gh/krmanik/genanki-js/dist/genanki.js');
+      await loadScript(SQLJS_BASE + 'sql-wasm.js');
       if(typeof initSqlJs !== 'function') throw new Error('sql.js 로드 실패');
-      const sql = await initSqlJs({ locateFile: f => 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/'+f });
-      window.SQL = sql;
-    })();
+      const SQL = await initSqlJs({ locateFile: f => SQLJS_BASE + f });
+      const gen = await import(GENANKI_ESM);
+      if(!gen.Model || !gen.Deck || !gen.Package) throw new Error('genanki-js 로드 실패');
+      return { SQL, Model: gen.Model, Deck: gen.Deck, Package: gen.Package };
+    })().catch(err=>{
+      ankiLibsPromise = null; // allow a retry on the next click
+      throw err;
+    });
     return ankiLibsPromise;
+  }
+
+  const escHtml = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  // HTML for the OpenRussian entries (pos, gender/aspect, forms, all meanings) shown on the card back.
+  function buildOREntriesHtml(groups){
+    const multi = groups.length > 1;
+    let any = false;
+    let html = '';
+    groups.forEach(g=>{
+      if(multi) html += '<div class="orx-sub"><b>'+escHtml(g.token)+'</b></div>';
+      if(!g.entries.length){ html += '<div class="orx-sub">결과 없음</div>'; return; }
+      any = true;
+      g.entries.forEach(e=>{
+        html += '<div class="orx"><b>'+escHtml(orStress(e.accented))+'</b> <span class="orx-meta">['+escHtml(orMetaLabel(e))+']</span>';
+        if(!e.exact && e.tags && e.tags.length) html += '<br><span class="orx-sub">형태: '+escHtml(e.tags.slice(0, 4).join(', '))+'</span>';
+        html += '<br>'+escHtml(e.en || '');
+        if(e.x && e.x.partner) html += '<br><span class="orx-sub">짝: '+escHtml(e.x.partner)+'</span>';
+        html += '</div>';
+      });
+    });
+    if(any) html += '<div class="orx-src">OpenRussian.org · CC BY-SA 4.0</div>';
+    return html;
+  }
+
+  // HTML for the "사전" field: OpenRussian entries (when available) + one OpenRussian link per word
+  // (split on spaces/hyphens). Single word -> just 📖; several words -> "📖 word" per word.
+  function buildAnkiDictHtml(word, groups){
+    const parts = splitDictTokens(word);
+    const links = parts.map(t =>
+      '<a class="dict" href="https://en.openrussian.org/?search='+encodeURIComponent(t.toLowerCase())+'">📖'+(parts.length > 1 ? ' '+escHtml(t) : '')+'</a>'
+    ).join(' ');
+    const entriesHtml = (groups && groups.length) ? buildOREntriesHtml(groups) : '';
+    return entriesHtml + (entriesHtml && links ? '<br>' : '') + links;
+  }
+
+  // Dictionary data for a pinned word: the snapshot taken at pin time, otherwise a fresh lookup.
+  async function dictGroupsForPin(item){
+    if(item.dict && item.dict.length) return item.dict;
+    const res = await orLookup(item.word);
+    return res.groups.length > 1 ? res.groups.map(g => ({token:g.token, entries:g.entries.slice(0, 1)})) : res.groups;
   }
 
   async function doExportApkg(){
@@ -2789,16 +3117,36 @@
     const btns = [btnExportApkg, btnExportApkgMobile].filter(Boolean);
     btns.forEach(b=>{ b.disabled = true; b.dataset.origText = b.textContent; b.textContent = '⏳'; });
     try{
-      await ensureAnkiLibs();
+      const { SQL, Model, Deck, Package } = await ensureAnkiLibs();
+      // Fill each card's dictionary info; if the dataset can't be loaded the cards still export (links only).
+      const groupsById = new Map();
+      let dictFailed = false;
+      for(const {item} of entries){
+        if(item.dict && item.dict.length){ groupsById.set(item.id, item.dict); continue; } // snapshot taken at pin time
+        if(dictFailed) continue; // dataset unavailable: don't retry for every card
+        try{ groupsById.set(item.id, await dictGroupsForPin(item)); }
+        catch(e){ dictFailed = true; }
+      }
+      // v4.2: extra "사전" field holds OpenRussian links (HTML). A new model id is used because the
+      // field list changed; reusing the old id would clash with already-imported v1 notes in Anki.
       const model = new Model({
-        name: '러시아어 읽기 학습기 - 단어',
-        id: '1691000000001',
-        flds: [ {name:'단어'}, {name:'뜻'}, {name:'예문'}, {name:'예문 뜻'} ],
+        name: '러시아어 읽기 학습기 - 단어 (사전 링크)',
+        id: '1691000000002',
+        flds: [ {name:'단어'}, {name:'뜻'}, {name:'예문'}, {name:'예문 뜻'}, {name:'사전'} ],
         req: [[0, 'all', [0]]],
+        css: `.card { font-family: arial; font-size: 20px; text-align: center; color: black; background-color: white; }
+.dict { display:inline-block; text-decoration:none; font-size:16px; padding:2px 10px; margin:2px 3px;
+        border:1px solid #93a1a1; border-radius:14px; color:#268bd2; }
+.orx { text-align:left; font-size:15px; margin:8px 0; padding:6px 8px; border:1px solid #93a1a1; border-radius:8px; }
+.orx-meta { color:#2aa198; font-size:13px; }
+.orx-sub { color:#586e75; font-size:13px; text-align:left; }
+.orx-src { font-size:11px; color:#93a1a1; text-align:right; }
+.nightMode .card { color:#eee8d5; background-color:#002b36; }
+.nightMode .orx-sub { color:#93a1a1; }`,
         tmpls: [{
           name: 'Card 1',
           qfmt: '{{단어}}',
-          afmt: '{{FrontSide}}<hr id="answer">{{뜻}}<br><br><i>{{예문}}</i><br>{{예문 뜻}}'
+          afmt: '{{FrontSide}}<hr id="answer">{{뜻}}<br><br><i>{{예문}}</i><br>{{예문 뜻}}<br><br>{{사전}}'
         }]
       });
       const doc = getActiveDoc();
@@ -2806,11 +3154,13 @@
       const deckBase = allScope ? '러시아어 읽기 (전체)' : (doc && doc.title ? doc.title : '러시아어 읽기');
       const deck = new Deck(Date.now(), deckBase + ' 단어');
       entries.forEach(({item})=>{
-        deck.addNote(model.note([item.word, item.meaning, item.sentence, item.sentenceTranslation]));
+        deck.addNote(model.note([item.word, item.meaning, item.sentence, item.sentenceTranslation, buildAnkiDictHtml(item.word, groupsById.get(item.id))]));
       });
       const pkg = new Package();
+      pkg.setSqlJs(new SQL.Database()); // genanki writes the collection into this fresh in-memory DB
       pkg.addDeck(deck);
       await pkg.writeToFile(sanitizeFileName(allScope ? 'russian-vocab-all' : (doc ? doc.title : 'russian-vocab'))+'.apkg');
+      if(dictFailed) alert('사전 데이터를 불러오지 못해 일부 카드에는 OpenRussian 내용이 빠졌습니다 (링크만 포함). 네트워크 확인 후 다시 내보내 주세요.');
     }catch(e){
       alert('Anki 파일 생성 중 오류가 발생했습니다: '+(e && e.message ? e.message : e));
     } finally {
@@ -2834,7 +3184,14 @@
           out += '(선택 없음)\n';
         } else {
           const selectedArr = [...page.selected];
-          if(selectedArr.length === 1){
+          if(isORMode()){
+            for(const idx of selectedArr){
+              const seg = getWordSegByIndex(page, idx);
+              let res = null;
+              try{ res = await orLookup(seg.text); }catch(e){ res = null; }
+              out += seg.text+' => '+(res ? (orSummary(res) || '(결과 없음)') : '(사전 불러오기 실패)')+'\n';
+            }
+          } else if(selectedArr.length === 1){
             const idx = selectedArr[0];
             const seg = getWordSegByIndex(page, idx);
             const cacheKey = 'single:'+idx+':'+TOKEN_LANG;

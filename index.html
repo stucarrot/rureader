@@ -23,6 +23,7 @@
     --ko-font:'Noto Sans KR', sans-serif;
     --ru-size:20px;
     --ko-size:16px;
+    --wb-left:#fdf3c8;
   }
   body.dark{
     --bg:#002b36;
@@ -35,6 +36,7 @@
     --danger:#ff6e64;
     --notif-bg:#073642;
     --notif-border:#586e75;
+    --wb-left:#0d3f4b;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;height:100%;}
@@ -167,11 +169,62 @@
   .pin-btn:hover{border-color:var(--accent);}
   .pin-btn:disabled{opacity:.6;cursor:default;}
   .pin-btn.done{color:var(--accent2);border-color:var(--accent2);opacity:1;}
+  .wb-count{color:var(--accent);font-weight:700;font-size:11px;flex-shrink:0;}
+  .wb-overlay{
+    display:none;position:fixed;inset:0;z-index:120;
+    background:var(--bg);color:var(--fg);
+    flex-direction:column;
+  }
+  .wb-overlay.open{display:flex;}
+  .wb-head{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:10px 14px;border-bottom:1px solid var(--border);
+  }
+  .wb-head h3{margin:0;font-size:16px;flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wb-head .wb-sub{font-size:12px;color:var(--muted);}
+  .wb-head button{font-size:14px;padding:4px 10px;line-height:1.2;}
+  .wb-head input{font-size:13px;width:150px;max-width:40vw;}
+  .wb-body{flex:1;overflow-y:auto;padding:0 0 18px;-webkit-overflow-scrolling:touch;}
+  .wb-table{max-width:1000px;margin:0 auto;}
+  .wb-row{
+    display:grid;grid-template-columns:minmax(120px,38%) 1fr;
+    border-bottom:1px solid var(--border);
+  }
+  .wb-left{background:var(--wb-left);padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+  .wb-word{font-family:var(--ru-font);font-weight:700;font-size:26px;line-height:1.15;word-break:break-word;}
+  .wb-lemma{font-family:var(--ru-font);font-size:14px;color:var(--muted);margin-top:-4px;}
+  .wb-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .wb-chip{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:14px;line-height:1;padding:7px 12px;border-radius:16px;
+    background:rgba(255,255,255,.65);color:var(--fg);
+    border:1px solid var(--border);text-decoration:none;
+  }
+  body.dark .wb-chip{background:rgba(255,255,255,.08);}
+  .wb-chip.muted{color:var(--muted);}
+  a.wb-chip:hover{border-color:var(--accent);color:var(--accent);}
+  .wb-right{padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .wb-meaning{font-family:var(--ko-font);font-size:calc(var(--ko-size) + 5px);line-height:1.5;word-break:break-word;}
+  .wb-extra{font-size:calc(var(--ko-size) - 2px);color:var(--muted);line-height:1.45;}
+  .wb-ex{font-family:var(--ru-font);font-style:italic;font-size:calc(var(--ko-size) - 1px);color:var(--muted);line-height:1.5;border-top:1px dashed var(--border);padding-top:8px;}
+  .wb-ex mark{background:rgba(38,139,210,.2);color:inherit;border-radius:3px;font-style:normal;font-weight:700;}
+  .wb-ex-tr{font-family:var(--ko-font);font-size:calc(var(--ko-size) - 2px);color:var(--muted);line-height:1.45;}
+  .wb-group{padding:8px 14px;font-size:12px;font-weight:700;color:var(--accent2);background:var(--bg-alt);border-bottom:1px solid var(--border);}
+  .wb-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;}
+  .wb-foot{padding:6px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center;}
+  .wb-nav{z-index:130;}
+  #wbPrev{left:6px;}
+  #wbNext{right:6px;}
+  @media (max-width:600px){
+    .wb-row{grid-template-columns:minmax(110px,40%) 1fr;}
+    .wb-word{font-size:22px;}
+    .wb-meaning{font-size:calc(var(--ko-size) + 3px);}
+    .wb-head input{width:100px;}
+  }
   .or-entry{margin:6px 0 4px;}
   .or-lemma{font-family:var(--ru-font);font-weight:700;}
   .or-forms{font-size:12px;color:var(--muted);margin:1px 0;}
   .or-token{font-size:12px;font-weight:700;color:var(--accent2);margin-top:6px;}
-  .or-src{font-size:10px;color:var(--muted);margin-top:4px;}
   .pinned-doc-label{
     font-size:11px;color:var(--accent2);font-weight:700;
     margin:8px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
@@ -735,6 +788,13 @@
     <hr>
     <div>
       <div class="flex-between">
+        <h3 style="font-size:14px;">단어장</h3>
+      </div>
+      <div id="wordbookListDesktop"></div>
+    </div>
+    <hr>
+    <div>
+      <div class="flex-between">
         <h3 style="font-size:14px;">북마크 (현재 작업)</h3>
       </div>
       <div id="bookmarkListDesktop"></div>
@@ -752,6 +812,7 @@
       <div class="flex-between" style="flex-wrap:wrap;gap:6px;">
         <h3 style="font-size:14px;">고정된 단어 (Anki)</h3>
         <div class="ctrl-row" style="flex-wrap:nowrap;white-space:nowrap;">
+          <button id="btnRefreshPinned" style="font-size:14px;padding:4px 9px;line-height:1;" title="OpenRussian 데이터로 뜻·품사 갱신" aria-label="고정된 단어 갱신" disabled>🔄</button>
           <button id="btnClearPinned" style="font-size:14px;padding:4px 9px;line-height:1;" title="고정된 단어 전체 비우기" aria-label="고정된 단어 비우기" disabled>🗑</button>
           <button id="btnExportApkg" style="font-size:14px;padding:4px 9px;line-height:1;" title="Anki 카드(.apkg)로 내려받기" aria-label="Anki 카드 내려받기" disabled>⬇</button>
         </div>
@@ -771,12 +832,16 @@
   <h3 style="font-size:14px;margin:0;">작업 목록</h3>
   <div class="task-list" id="taskListMobile"></div>
   <hr>
+  <h3 style="font-size:14px;margin:0;">단어장</h3>
+  <div id="wordbookListMobile"></div>
+  <hr>
   <h3 style="font-size:14px;margin:0;">북마크 (현재 작업)</h3>
   <div id="bookmarkListMobile"></div>
   <hr>
   <div class="flex-between" style="flex-wrap:wrap;gap:6px;">
     <h3 style="font-size:14px;margin:0;">고정된 단어 (Anki)</h3>
     <div class="ctrl-row" style="flex-wrap:nowrap;white-space:nowrap;">
+      <button id="btnRefreshPinnedMobile" style="font-size:14px;padding:4px 9px;line-height:1;" title="OpenRussian 데이터로 뜻·품사 갱신" aria-label="고정된 단어 갱신" disabled>🔄</button>
       <button id="btnClearPinnedMobile" style="font-size:14px;padding:4px 9px;line-height:1;" title="고정된 단어 전체 비우기" aria-label="고정된 단어 비우기" disabled>🗑</button>
       <button id="btnExportApkgMobile" style="font-size:14px;padding:4px 9px;line-height:1;" title="Anki 카드(.apkg)로 내려받기" aria-label="Anki 카드 내려받기" disabled>⬇</button>
     </div>
@@ -792,6 +857,21 @@
 
 <button id="prevPage" class="float-nav" title="이전 문단" aria-label="이전 문단">‹</button>
 <button id="nextPage" class="float-nav" title="다음 문단" aria-label="다음 문단">›</button>
+
+<div class="wb-overlay" id="wordbookView" role="dialog" aria-label="단어장">
+  <div class="wb-head">
+    <button id="wbClose" title="닫기" aria-label="단어장 닫기">✕</button>
+    <h3 id="wbTitle">단어장</h3>
+    <span class="wb-sub" id="wbCount"></span>
+    <input type="text" id="wbFilter" placeholder="단어·뜻 검색" aria-label="단어장 검색">
+    <button id="wbRefresh" title="OpenRussian 데이터로 뜻·품사 갱신" aria-label="단어장 갱신">🔄</button>
+    <button id="wbExport" title="Anki 카드(.apkg)로 내려받기" aria-label="Anki 카드 내려받기">⬇</button>
+  </div>
+  <div class="wb-body" id="wbBody"></div>
+  <div class="wb-foot" id="wbFoot">사전 데이터: OpenRussian.org · CC BY-SA 4.0</div>
+  <button id="wbPrev" class="float-nav wb-nav" title="이전 페이지" aria-label="이전 페이지">‹</button>
+  <button id="wbNext" class="float-nav wb-nav" title="다음 페이지" aria-label="다음 페이지">›</button>
+</div>
 
 <div class="modal-overlay" id="jumpModal">
   <div class="modal" style="width:min(420px,90vw);">
@@ -971,6 +1051,21 @@
   const notifPanelMobile = document.getElementById('notifPanelMobile');
   const pinnedTokensList = document.getElementById('pinnedTokensList');
   const pinnedTokensListMobile = document.getElementById('pinnedTokensListMobile');
+  const wordbookListDesktop = document.getElementById('wordbookListDesktop');
+  const wordbookListMobile = document.getElementById('wordbookListMobile');
+  const wordbookView = document.getElementById('wordbookView');
+  const wbBody = document.getElementById('wbBody');
+  const wbTitle = document.getElementById('wbTitle');
+  const wbCount = document.getElementById('wbCount');
+  const wbFilter = document.getElementById('wbFilter');
+  const wbRefresh = document.getElementById('wbRefresh');
+  const wbExport = document.getElementById('wbExport');
+  const wbClose = document.getElementById('wbClose');
+  const wbPrev = document.getElementById('wbPrev');
+  const wbNext = document.getElementById('wbNext');
+  const wbFoot = document.getElementById('wbFoot');
+  const btnRefreshPinned = document.getElementById('btnRefreshPinned');
+  const btnRefreshPinnedMobile = document.getElementById('btnRefreshPinnedMobile');
   const pinScopeSelect = document.getElementById('pinScopeSelect');
   const pinScopeSelectMobile = document.getElementById('pinScopeSelectMobile');
   const btnExportApkg = document.getElementById('btnExportApkg');
@@ -1224,6 +1319,7 @@
   }
 
   function renderTaskLists(){
+    renderWordbookList();
     [taskListDesktop, taskListMobile].forEach(container=>{
       if(!container) return;
       container.innerHTML = '';
@@ -2065,7 +2161,6 @@
   function fillORResult(body, result){
     body.innerHTML = '';
     const multi = result.groups.length > 1;
-    let any = false;
     result.groups.forEach(g=>{
       if(multi){
         const t = document.createElement('div');
@@ -2080,15 +2175,8 @@
         body.appendChild(none);
         return;
       }
-      any = true;
       g.entries.forEach(e => body.appendChild(buildOREntryEl(e)));
     });
-    if(any){
-      const src = document.createElement('div');
-      src.className = 'or-src';
-      src.textContent = '출처: OpenRussian.org (CC BY-SA 4.0)';
-      body.appendChild(src);
-    }
   }
 
   // ---------- Small reusable UI helpers: retry (on failure) and pin (for Anki export) ----------
@@ -2124,6 +2212,227 @@
 
   let pinIdCounter = 0;
   function genPinId(){ return 'pin_'+Date.now()+'_'+(pinIdCounter++); }
+
+  // ---------- Wordbooks (v4.4) ----------
+  // A wordbook is the set of pinned words of one document (or all documents). The list sits under
+  // the task list; clicking one opens a full-screen viewer (word + chips on a yellow cell, meaning
+  // + example sentence on the right). Data is exactly what the Anki export uses.
+  const WB = { open:false, scope:'all' };
+
+  function wbEntries(){
+    if(WB.scope === 'all'){
+      const out = [];
+      state.docs.forEach(d => (d.pinnedTokens || []).forEach(item => out.push({item, doc:d})));
+      return out;
+    }
+    const d = state.docs.find(x => x.id === WB.scope);
+    return d ? (d.pinnedTokens || []).map(item => ({item, doc:d})) : [];
+  }
+
+  function renderWordbookList(){
+    [wordbookListDesktop, wordbookListMobile].forEach(container=>{
+      if(!container) return;
+      container.innerHTML = '';
+      if(state.docs.length === 0){
+        const empty = document.createElement('div');
+        empty.className = 'small-note';
+        empty.textContent = '작업을 불러오면 단어장이 만들어집니다.';
+        container.appendChild(empty);
+        return;
+      }
+      const addRow = (label, count, scope)=>{
+        const row = document.createElement('div');
+        row.className = 'bookmark-item' + (scope === state.activeDocId ? ' current' : '');
+        const lab = document.createElement('span');
+        lab.className = 'bookmark-item-label';
+        lab.textContent = label;
+        const cnt = document.createElement('span');
+        cnt.className = 'wb-count';
+        cnt.textContent = count;
+        row.appendChild(lab);
+        row.appendChild(cnt);
+        row.addEventListener('click', ()=>{
+          closeTaskDrawerIfMobile();
+          openWordbook(scope);
+        });
+        container.appendChild(row);
+      };
+      if(state.docs.length > 1){
+        const total = state.docs.reduce((n, d) => n + (d.pinnedTokens || []).length, 0);
+        addRow('📚 전체 단어장', total, 'all');
+      }
+      state.docs.forEach(d => addRow((d.title || '(제목 없음)'), (d.pinnedTokens || []).length, d.id));
+    });
+  }
+
+  function appendHighlighted(el, text, word){
+    const i = word ? text.toLowerCase().indexOf(String(word).toLowerCase()) : -1;
+    if(i < 0){ el.textContent = text; return; }
+    el.appendChild(document.createTextNode(text.slice(0, i)));
+    const m = document.createElement('mark');
+    m.textContent = text.slice(i, i + word.length);
+    el.appendChild(m);
+    el.appendChild(document.createTextNode(text.slice(i + word.length)));
+  }
+
+  // What the viewer shows for one pinned word: headline, lemma hint, chips, meaning lines.
+  function wbInfo(item){
+    const groups = (item.dict && item.dict.length) ? item.dict : null;
+    const top = groups && groups[0].entries[0] ? groups[0].entries[0] : null;
+    const info = { word: item.word, lemma: '', chips: [], formChips: [], main: item.meaning || '', extras: [] };
+    if(top){
+      if(top.exact) info.word = orStress(top.accented);
+      else info.lemma = '← '+orStress(top.accented);
+      info.chips = orMetaLabel(top).split(' · ');
+      if(!top.exact && top.tags && top.tags.length) info.formChips = top.tags.slice(0, 2);
+    }
+    if(groups && !item.meaningEdited){
+      const lines = [];
+      groups.forEach(g=>{
+        g.entries.forEach((e, i)=>{
+          const prefix = (groups.length > 1 && i === 0 ? g.token+': ' : '');
+          lines.push({text: prefix+(e.en || '(뜻 없음)'), head: i === 0 && g === groups[0], lemma: e});
+        });
+      });
+      if(lines.length){
+        info.main = lines[0].text;
+        info.extras = lines.slice(1).map(l => (l.lemma ? orStress(l.lemma.accented)+' ['+orMetaLabel(l.lemma)+'] ' : '')+l.text);
+      }
+    }
+    return info;
+  }
+
+  function buildWordbookRow(item){
+    const info = wbInfo(item);
+    const row = document.createElement('div');
+    row.className = 'wb-row';
+    const left = document.createElement('div');
+    left.className = 'wb-left';
+    const w = document.createElement('div');
+    w.className = 'wb-word';
+    w.textContent = info.word;
+    left.appendChild(w);
+    if(info.lemma){
+      const lem = document.createElement('div');
+      lem.className = 'wb-lemma';
+      lem.textContent = info.lemma;
+      left.appendChild(lem);
+    }
+    const chips = document.createElement('div');
+    chips.className = 'wb-chips';
+    info.chips.forEach(c=>{ const el = document.createElement('span'); el.className = 'wb-chip'; el.textContent = c; chips.appendChild(el); });
+    info.formChips.forEach(c=>{ const el = document.createElement('span'); el.className = 'wb-chip muted'; el.textContent = c; chips.appendChild(el); });
+    const parts = splitDictTokens(item.word);
+    parts.forEach(t=>{
+      const a = document.createElement('a');
+      a.className = 'wb-chip';
+      a.href = 'https://en.openrussian.org/?search='+encodeURIComponent(t.toLowerCase());
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.title = 'OpenRussian 사전에서 "'+t+'" 검색';
+      a.setAttribute('aria-label', 'OpenRussian 검색: '+t);
+      a.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg>';
+      if(parts.length > 1) a.appendChild(document.createTextNode(t));
+      chips.appendChild(a);
+    });
+    left.appendChild(chips);
+
+    const right = document.createElement('div');
+    right.className = 'wb-right';
+    const meaning = document.createElement('div');
+    meaning.className = 'wb-meaning';
+    meaning.textContent = info.main || '(뜻 없음)';
+    right.appendChild(meaning);
+    info.extras.forEach(t=>{ const x = document.createElement('div'); x.className = 'wb-extra'; x.textContent = '· '+t; right.appendChild(x); });
+    if(item.sentence){
+      const ex = document.createElement('div');
+      ex.className = 'wb-ex';
+      appendHighlighted(ex, item.sentence, item.word);
+      right.appendChild(ex);
+      if(item.sentenceTranslation){
+        const tr = document.createElement('div');
+        tr.className = 'wb-ex-tr';
+        tr.textContent = item.sentenceTranslation;
+        right.appendChild(tr);
+      }
+    }
+    row.appendChild(left);
+    row.appendChild(right);
+    return row;
+  }
+
+  function renderWordbookView(){
+    const all = wbEntries();
+    const q = wbFilter.value.trim().toLowerCase();
+    const shown = !q ? all : all.filter(({item})=>{
+      const info = wbInfo(item);
+      return [item.word, info.main, info.extras.join(' '), item.sentence, item.sentenceTranslation].join(' ').toLowerCase().includes(q);
+    });
+    wbTitle.textContent = WB.scope === 'all' ? '📚 전체 단어장' : ((state.docs.find(d => d.id === WB.scope) || {}).title || '단어장');
+    wbCount.textContent = q ? shown.length+' / '+all.length+'개' : all.length+'개';
+    wbExport.disabled = all.length === 0;
+    wbRefresh.disabled = all.length === 0;
+    wbFoot.style.display = all.some(({item}) => item.dict && item.dict.length) ? '' : 'none';
+    wbBody.innerHTML = '';
+    if(shown.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'wb-empty';
+      empty.textContent = all.length === 0 ? '고정된 단어가 없습니다. 본문에서 단어를 눌러 📌로 고정하세요.' : '검색 결과가 없습니다.';
+      wbBody.appendChild(empty);
+      return;
+    }
+    const table = document.createElement('div');
+    table.className = 'wb-table';
+    let lastDoc = null;
+    shown.forEach(({item, doc})=>{
+      if(WB.scope === 'all' && doc.id !== lastDoc){
+        const g = document.createElement('div');
+        g.className = 'wb-group';
+        g.textContent = '📄 '+(doc.title || '(제목 없음)');
+        table.appendChild(g);
+      }
+      lastDoc = doc.id;
+      table.appendChild(buildWordbookRow(item));
+    });
+    wbBody.appendChild(table);
+  }
+
+  function openWordbook(scope){
+    WB.open = true;
+    WB.scope = scope;
+    wbFilter.value = '';
+    wordbookView.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderWordbookView();
+    wbBody.scrollTop = 0;
+  }
+  function closeWordbook(){
+    WB.open = false;
+    wordbookView.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  // Page-wise scrolling (instant, e-ink friendly), same idea as the paragraph arrows.
+  function wbPage(dir){
+    wbBody.scrollBy({top: dir * Math.max(120, wbBody.clientHeight * 0.9), behavior: 'auto'});
+  }
+  wbClose.addEventListener('click', closeWordbook);
+  wbPrev.addEventListener('click', ()=> wbPage(-1));
+  wbNext.addEventListener('click', ()=> wbPage(1));
+  wbFilter.addEventListener('input', ()=>{ renderWordbookView(); wbBody.scrollTop = 0; });
+  wbRefresh.addEventListener('click', ()=> refreshPinnedDict(wbEntries()));
+  wbExport.addEventListener('click', ()=>{
+    const entries = wbEntries();
+    if(!entries.length) return;
+    const title = WB.scope === 'all' ? '러시아어 읽기 (전체)' : ((state.docs.find(d => d.id === WB.scope) || {}).title || '러시아어 읽기');
+    exportEntriesToApkg(entries, title, WB.scope === 'all' ? 'russian-vocab-all' : title);
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(!WB.open) return;
+    if(e.key === 'Escape'){ closeWordbook(); return; }
+    if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if(e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); wbPage(1); }
+    if(e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); wbPage(-1); }
+  });
 
   // Duplicate key: same word (case/spacing-insensitive) within the same document.
   function pinKey(word){ return String(word).toLowerCase().replace(/\s+/g,' ').trim(); }
@@ -2265,6 +2574,7 @@
         saveBtn.textContent = '저장';
         saveBtn.addEventListener('click', ()=>{
           item.word = wordInput.value.trim() || item.word;
+          if(meaningInput.value.trim() !== item.meaning) item.meaningEdited = true; // keep manual edits on refresh
           item.meaning = meaningInput.value.trim();
           item.sentence = sentenceInput.value.trim();
           item.sentenceTranslation = sentenceTransInput.value.trim();
@@ -2298,10 +2608,12 @@
       });
     });
     const noPins = entries.length === 0;
-    [btnExportApkg, btnExportApkgMobile, btnClearPinned, btnClearPinnedMobile].forEach(b=>{
+    [btnExportApkg, btnExportApkgMobile, btnClearPinned, btnClearPinnedMobile, btnRefreshPinned, btnRefreshPinnedMobile].forEach(b=>{
       if(b) b.disabled = noPins;
     });
     syncPinButtons();
+    renderWordbookList();
+    if(WB.open) renderWordbookView();
   }
 
   function clearPinnedTokens(){
@@ -2314,6 +2626,34 @@
     renderPinnedTokens();
     scheduleAutoSave();
   }
+  // Re-fills meaning / part of speech / gender for existing pins from the OpenRussian dataset.
+  // Manually edited meanings are kept (only the stored dictionary data is refreshed for those).
+  async function refreshPinnedDict(entries){
+    if(!entries.length) return;
+    if(!confirm('고정된 단어 '+entries.length+'개의 뜻·품사·성별을 OpenRussian 데이터로 갱신할까요?\n(직접 수정한 뜻은 유지되고, 결과가 없는 단어는 그대로 둡니다. 처음이면 사전 데이터를 내려받습니다)')) return;
+    const btns = [btnRefreshPinned, btnRefreshPinnedMobile, wbRefresh].filter(Boolean);
+    btns.forEach(b=>{ b.disabled = true; b.dataset.origText = b.textContent; b.textContent = '⏳'; });
+    let updated = 0, none = 0, keptEdited = 0;
+    try{
+      await loadOpenRussian();
+      for(const {item} of entries){
+        const res = await orLookup(item.word);
+        if(!res.groups.some(g => g.entries.length)){ none++; continue; }
+        item.dict = res.groups;
+        if(item.meaningEdited) keptEdited++; else item.meaning = orSummary(res);
+        updated++;
+      }
+      scheduleAutoSave();
+      alert('갱신 완료: '+updated+'개 갱신'+(none ? ', '+none+'개 결과 없음' : '')+(keptEdited ? ', '+keptEdited+'개는 직접 수정한 뜻 유지' : '')+'.');
+    }catch(e){
+      alert('사전 데이터를 불러오지 못해 갱신하지 못했습니다 (네트워크/CDN 문제일 수 있음). 일부만 갱신됐을 수 있습니다.');
+    }finally{
+      btns.forEach(b=>{ b.disabled = false; b.textContent = b.dataset.origText || '🔄'; });
+      renderPinnedTokens();
+    }
+  }
+  if(btnRefreshPinned) btnRefreshPinned.addEventListener('click', ()=> refreshPinnedDict(getScopeEntries()));
+  if(btnRefreshPinnedMobile) btnRefreshPinnedMobile.addEventListener('click', ()=> refreshPinnedDict(getScopeEntries()));
   if(btnClearPinned) btnClearPinned.addEventListener('click', clearPinnedTokens);
   if(btnClearPinnedMobile) btnClearPinnedMobile.addEventListener('click', clearPinnedTokens);
   [pinScopeSelect, pinScopeSelectMobile].forEach(sel=>{
@@ -3111,10 +3451,18 @@
     return res.groups.length > 1 ? res.groups.map(g => ({token:g.token, entries:g.entries.slice(0, 1)})) : res.groups;
   }
 
-  async function doExportApkg(){
+  function doExportApkg(){
     const entries = getScopeEntries();
     if(entries.length === 0) return;
-    const btns = [btnExportApkg, btnExportApkgMobile].filter(Boolean);
+    const doc = getActiveDoc();
+    const allScope = state.pinScope === 'all';
+    return exportEntriesToApkg(entries,
+      allScope ? '러시아어 읽기 (전체)' : (doc && doc.title ? doc.title : '러시아어 읽기'),
+      allScope ? 'russian-vocab-all' : (doc ? doc.title : 'russian-vocab'));
+  }
+
+  async function exportEntriesToApkg(entries, deckBase, fileBase){
+    const btns = [btnExportApkg, btnExportApkgMobile, wbExport].filter(Boolean);
     btns.forEach(b=>{ b.disabled = true; b.dataset.origText = b.textContent; b.textContent = '⏳'; });
     try{
       const { SQL, Model, Deck, Package } = await ensureAnkiLibs();
@@ -3149,9 +3497,6 @@
           afmt: '{{FrontSide}}<hr id="answer">{{뜻}}<br><br><i>{{예문}}</i><br>{{예문 뜻}}<br><br>{{사전}}'
         }]
       });
-      const doc = getActiveDoc();
-      const allScope = state.pinScope === 'all';
-      const deckBase = allScope ? '러시아어 읽기 (전체)' : (doc && doc.title ? doc.title : '러시아어 읽기');
       const deck = new Deck(Date.now(), deckBase + ' 단어');
       entries.forEach(({item})=>{
         deck.addNote(model.note([item.word, item.meaning, item.sentence, item.sentenceTranslation, buildAnkiDictHtml(item.word, groupsById.get(item.id))]));
@@ -3159,12 +3504,13 @@
       const pkg = new Package();
       pkg.setSqlJs(new SQL.Database()); // genanki writes the collection into this fresh in-memory DB
       pkg.addDeck(deck);
-      await pkg.writeToFile(sanitizeFileName(allScope ? 'russian-vocab-all' : (doc ? doc.title : 'russian-vocab'))+'.apkg');
+      await pkg.writeToFile(sanitizeFileName(fileBase)+'.apkg');
       if(dictFailed) alert('사전 데이터를 불러오지 못해 일부 카드에는 OpenRussian 내용이 빠졌습니다 (링크만 포함). 네트워크 확인 후 다시 내보내 주세요.');
     }catch(e){
       alert('Anki 파일 생성 중 오류가 발생했습니다: '+(e && e.message ? e.message : e));
     } finally {
-      btns.forEach(b=>{ b.disabled = getScopeEntries().length === 0; b.textContent = b.dataset.origText || '⬇'; });
+      btns.forEach(b=>{ b.disabled = false; b.textContent = b.dataset.origText || '⬇'; });
+      renderPinnedTokens(); // recomputes which buttons are enabled
     }
   }
   if(btnExportApkg) btnExportApkg.addEventListener('click', doExportApkg);

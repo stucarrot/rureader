@@ -209,6 +209,9 @@
   .wb-ex{font-family:var(--ru-font);font-style:italic;font-size:calc(var(--ko-size) - 1px);color:var(--muted);line-height:1.5;border-top:1px dashed var(--border);padding-top:8px;}
   .wb-ex mark{background:rgba(38,139,210,.2);color:inherit;border-radius:3px;font-style:normal;font-weight:700;}
   .wb-ex-tr{font-family:var(--ko-font);font-size:calc(var(--ko-size) - 2px);color:var(--muted);line-height:1.45;}
+  .wb-dex{font-size:calc(var(--ko-size) - 3px);color:var(--muted);line-height:1.45;padding-left:8px;border-left:2px solid var(--border);}
+  .wb-dex-ru{font-family:var(--ru-font);font-style:italic;}
+  .wb-dex-ru mark{background:rgba(38,139,210,.2);color:inherit;font-style:normal;font-weight:700;border-radius:3px;}
   .wb-group{padding:8px 14px;font-size:12px;font-weight:700;color:var(--accent2);background:var(--bg-alt);border-bottom:1px solid var(--border);}
   .wb-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;}
   .wb-foot{padding:6px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center;}
@@ -222,6 +225,9 @@
     .wb-head input{width:100px;}
   }
   .or-entry{margin:6px 0 4px;}
+  .or-ex{margin:5px 0 0;padding-left:8px;border-left:2px solid var(--border);}
+  .or-ex-ru{font-family:var(--ru-font);font-style:italic;font-size:13px;}
+  .or-ex-ru mark{background:rgba(38,139,210,.2);color:inherit;font-style:normal;font-weight:700;border-radius:3px;}
   .or-lemma{font-family:var(--ru-font);font-weight:700;}
   .or-forms{font-size:12px;color:var(--muted);margin:1px 0;}
   .or-token{font-size:12px;font-weight:700;color:var(--accent2);margin-top:6px;}
@@ -686,7 +692,7 @@
         <option value="google">구글 번역 (기존)</option>
         <option value="openrussian">OpenRussian 데이터</option>
       </select>
-      <div class="small-note">OpenRussian: 품사·성별·뜻 전체(영어). 변화형도 원형으로 찾습니다. 처음 조회할 때 사전 데이터(약 5MB)를 내려받습니다.</div>
+      <div class="small-note">OpenRussian: 품사·성별·난이도·뜻 전체(영어)·예문. 변화형도 원형으로 찾습니다. 조회할 때 필요한 조각만 내려받아 저장해 둡니다.</div>
     </div>
     <div class="ctrl-group">
       <h4>폰트 / 크기</h4>
@@ -737,6 +743,11 @@
       <div class="ctrl-row">
         <button id="btnSaveProgress" title="지금까지 작업한 내용을 브라우저에 저장" aria-label="중간 저장"><span class="icon">💾</span><span class="btn-label">중간 저장</span></button>
         <button id="btnClearProgress" title="저장된 내용 삭제" aria-label="저장된 내용 삭제"><span class="icon">🗑️</span><span class="btn-label">저장 삭제</span></button>
+      </div>
+      <div class="ctrl-row">
+        <button id="btnBackup" title="모든 작업·고정 단어·북마크·설정을 파일(.json)로 저장" aria-label="백업 파일 저장"><span class="icon">📦</span><span class="btn-label">백업 저장</span></button>
+        <button id="btnRestore" title="백업 파일(.json)을 불러와 작업 목록에 추가" aria-label="백업 파일 불러오기"><span class="icon">📂</span><span class="btn-label">백업 불러오기</span></button>
+        <input type="file" id="restoreInput" accept=".json,application/json" style="display:none;">
       </div>
       <div class="save-status" id="saveStatusLabel">자동 저장: 아직 없음</div>
     </div>
@@ -1965,18 +1976,117 @@
     'https://raw.githubusercontent.com/Badestrand/russian-dictionary/'+OR_DATA_SHA+'/'+file+'.csv'
   ];
   const OR_MAX_ENTRIES = 3;
-  const OR_POS_ORDER = {noun:0, verb:1, adjective:2, other:3};
-  const OR_POS_LABEL = {noun:'명사', verb:'동사', adjective:'형용사', other:'기타'};
+  const OR_POS_ORDER = {noun:0, verb:1, adjective:2, adverb:3, pronoun:4, expression:5, other:6};
+  const OR_POS_LABEL = {noun:'명사', verb:'동사', adjective:'형용사', adverb:'부사', pronoun:'대명사', expression:'표현', other:'기타'};
+  const OR_TAG_LABEL = {colloquial:'구어', archaic:'고어', formal:'격식'};
   const OR_CASE = {nom:'주격', gen:'속격', dat:'여격', acc:'대격', inst:'조격', prep:'전치격'};
   const OR_GENDER = {m:'남성', f:'여성', n:'중성', pl:'복수'};
-  const OR = { lemmas:[], hay:'', starts:[], tagNames:['lemma'], promise:null };
+  const OR = { lemmas:[], hay:'', starts:[], tagNames:['lemma'], promise:null, engine:null, enginePromise:null };
+
+  // ---- Engine A (v4.5, preferred): sharded dictionary built from the full OpenRussian database ----
+  // Files live in the dict/ folder next to index.html (built by tools/build_dict.py). A lookup
+  // downloads only the index chunk and the word-record files it needs; everything is cached.
+  // Change OR_DICT_BASE to host the folder elsewhere (e.g. a jsDelivr URL of your repo).
+  const OR_DICT_BASE = 'dict/';
+  const OR_TYPE_NAME = {n:'noun', v:'verb', a:'adjective', d:'adverb', p:'pronoun', o:'other', e:'expression'};
+  const ORD = { manifest:null, files:new Map() };
+  function ordFetch(path, kind){
+    if(!ORD.files.has(path)){
+      ORD.files.set(path, fetch(OR_DICT_BASE + path).then(res=>{
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        return kind === 'json' ? res.json() : res.text();
+      }).catch(err=>{ ORD.files.delete(path); throw err; }));
+    }
+    return ORD.files.get(path);
+  }
+  async function ordLoadManifest(){
+    const m = await ordFetch('manifest.json', 'json');
+    if(!m || !Array.isArray(m.idx) || !m.idx.length) throw new Error('잘못된 사전 manifest');
+    ORD.manifest = m;
+  }
+  // word ids (+ matched form codes) for a folded key
+  async function ordFindIds(k){
+    const idx = ORD.manifest.idx;
+    let lo = 0, hi = idx.length - 1;
+    while(lo < hi){
+      const mid = (lo + hi + 1) >> 1;
+      if(idx[mid][0] <= k) lo = mid; else hi = mid - 1;
+    }
+    const text = await ordFetch(idx[lo][1], 'text');
+    let start;
+    if(text.startsWith(k+'\t')) start = 0;
+    else { const p = text.indexOf('\n'+k+'\t'); if(p === -1) return []; start = p + 1; }
+    const end = text.indexOf('\n', start);
+    const line = text.slice(start + k.length + 1, end === -1 ? text.length : end);
+    return line.split(' ').map(part=>{
+      const c = part.indexOf(':');
+      return {id: parseInt(part.slice(0, c), 10), codes: part.slice(c + 1)};
+    });
+  }
+  async function ordRecord(id){
+    const b = Math.floor(id / ORD.manifest.bucket);
+    const bucket = await ordFetch('w/'+String(b).padStart(2, '0')+'.json', 'json');
+    return bucket[String(id)] || null;
+  }
+  function ordBuildEntry(r, k, codes){
+    const x = {};
+    if(r.g) x.gender = r.g;
+    if(r.an === 1) x.animate = '1'; else if(r.an === 0) x.animate = '0';
+    if(r.ic) x.indeclinable = '1';
+    if(r.so) x.sg_only = '1';
+    if(r.po) x.pl_only = '1';
+    if(r.pt) x.partner = r.pt;
+    if(r.as) x.aspect = r.as;
+    const senses = r.s || [];
+    let en = senses.map(sn => sn[0] + (sn[1] ? ' ('+sn[1]+')' : '')).join('; ');
+    if(!en && r.sd && r.sd.length) en = '(독일어) '+r.sd.join('; ');
+    const ex = [];
+    for(const sn of senses){ if(sn[2] && ex.length < 2) ex.push([sn[2], sn[3] || '']); }
+    for(const t of (r.x || [])){ if(ex.length < 2) ex.push([t[0], t[1], t[2], t[3]]); }
+    const chars = ORD.manifest.codeChars, ft = ORD.manifest.ft;
+    const tags = [];
+    for(const ch of codes){
+      const name = ft[chars.indexOf(ch)];
+      if(!name || name === 'lemma' || name === 'ru_base') continue;
+      const lab = orTagLabel(name);
+      if(!tags.includes(lab)) tags.push(lab);
+    }
+    const entry = {bare: r.b, accented: r.a || r.b, pos: OR_TYPE_NAME[r.t] || 'other', en, x: Object.keys(x).length ? x : null,
+      rank: r.r === undefined ? 1e9 : r.r, exact: foldWord(r.b) === k, tags};
+    if(r.l) entry.level = r.l;
+    if(r.tg && r.tg.length) entry.tg = r.tg;
+    if(ex.length) entry.ex = ex;
+    return entry;
+  }
+  async function ordFindEntries(token){
+    const k = foldWord(token);
+    if(!k) return [];
+    const hits = await ordFindIds(k);
+    if(!hits.length) return [];
+    const recs = await Promise.all(hits.map(h => ordRecord(h.id)));
+    const out = [];
+    hits.forEach((h, i)=>{ if(recs[i]) out.push(ordBuildEntry(recs[i], k, h.codes)); });
+    out.sort((a, b)=> (a.exact === b.exact ? 0 : a.exact ? -1 : 1) || (a.rank - b.rank) || (OR_POS_ORDER[a.pos] - OR_POS_ORDER[b.pos]));
+    return out.slice(0, OR_MAX_ENTRIES);
+  }
 
   function isORMode(){ return state.settings.tokenDict === 'openrussian'; }
   function foldWord(w){
-    return String(w).toLowerCase().replace(/['́’*|~]/g,'').replace(/ё/g,'е').trim();
+    return String(w).toLowerCase().replace(/['́’*|~()]/g,'').replace(/ё/g,'е').trim();
   }
   function orTagLabel(n){
     let m;
+    if((m = /^ru_noun_(sg|pl)_(nom|gen|dat|acc|inst|prep)$/.exec(n))) return (m[1]==='sg' ? '단수 ' : '복수 ')+OR_CASE[m[2]];
+    if((m = /^ru_adj_(m|f|n|pl)_(nom|gen|dat|acc|inst|prep)$/.exec(n))) return OR_GENDER[m[1]]+' '+OR_CASE[m[2]];
+    if((m = /^ru_adj_short_(m|f|n|pl)$/.exec(n))) return '단어미형 '+OR_GENDER[m[1]];
+    if(n === 'ru_adj_comparative') return '비교급';
+    if(n === 'ru_adj_superlative') return '최상급';
+    if((m = /^ru_verb_past_(m|f|n|pl)$/.exec(n))) return '과거 '+OR_GENDER[m[1]];
+    if((m = /^ru_verb_presfut_(sg|pl)([123])$/.exec(n))) return '현재·미래 '+m[2]+'인칭 '+(m[1]==='sg' ? '단수' : '복수');
+    if((m = /^ru_verb_imperative_(sg|pl)$/.exec(n))) return '명령형 '+(m[1]==='sg' ? '단수' : '복수');
+    if(n === 'ru_verb_gerund_present') return '현재 부동사';
+    if(n === 'ru_verb_gerund_past') return '과거 부동사';
+    if((m = /^ru_verb_participle_(active|passive)_(present|past)$/.exec(n))) return (m[1]==='active' ? '능동 ' : '피동 ')+(m[2]==='present' ? '현재' : '과거')+' 분사';
     if((m = /^(sg|pl)_(nom|gen|dat|acc|inst|prep)$/.exec(n))) return (m[1]==='sg' ? '단수 ' : '복수 ')+OR_CASE[m[2]];
     if((m = /^decl_(m|f|n|pl)_(nom|gen|dat|acc|inst|prep)$/.exec(n))) return OR_GENDER[m[1]]+' '+OR_CASE[m[2]];
     if((m = /^short_(m|f|n|pl)$/.exec(n))) return '단어미형 '+OR_GENDER[m[1]];
@@ -2000,7 +2110,7 @@
     throw lastErr || new Error('사전 데이터를 불러오지 못했습니다');
   }
 
-  function loadOpenRussian(){
+  function loadOpenRussianLegacy(){
     if(OR.promise) return OR.promise;
     OR.promise = (async ()=>{
       const texts = await Promise.all(OR_FILES.map(f => fetchOpenRussianCsv(f.file)));
@@ -2060,7 +2170,7 @@
   }
 
   // Entries (max OR_MAX_ENTRIES) whose lemma or any inflected form equals `token` (ё/е-insensitive).
-  function orFindEntries(token){
+  function orFindEntriesLegacy(token){
     const k = foldWord(token);
     if(!k) return [];
     const needle = '|'+k+'~';
@@ -2090,12 +2200,36 @@
 
   // Looks the token up as a whole first; if nothing is found and it contains hyphens/spaces,
   // each part is looked up separately. Result: {groups:[{token, entries:[...]}]}.
+  // Picks the engine once: the sharded dict/ folder if it can be fetched, otherwise the old
+  // 2021 CSV dataset from jsDelivr (no examples/levels, but the app keeps working).
+  function loadOpenRussian(){
+    if(OR.enginePromise) return OR.enginePromise;
+    OR.enginePromise = (async ()=>{
+      try{
+        await ordLoadManifest();
+        OR.engine = 'dict';
+      }catch(e){
+        console.warn('OpenRussian dict/ folder not available — falling back to the 2021 CSV dataset.', e);
+        await loadOpenRussianLegacy();
+        OR.engine = 'legacy';
+      }
+    })().catch(err=>{ OR.enginePromise = null; throw err; });
+    return OR.enginePromise;
+  }
+  async function orFindAny(token){
+    return OR.engine === 'dict' ? ordFindEntries(token) : orFindEntriesLegacy(token);
+  }
+
   async function orLookup(token){
     await loadOpenRussian();
-    const whole = orFindEntries(token);
+    const whole = await orFindAny(token);
     if(whole.length) return {groups: [{token, entries: whole}]};
     const parts = splitDictTokens(token);
-    if(parts.length > 1) return {groups: parts.map(t => ({token: t, entries: orFindEntries(t)}))};
+    if(parts.length > 1){
+      const groups = [];
+      for(const t of parts) groups.push({token: t, entries: await orFindAny(t)});
+      return {groups};
+    }
     return {groups: [{token, entries: []}]};
   }
 
@@ -2110,8 +2244,10 @@
       if(x.sg_only === '1') bits.push('단수만');
       if(x.pl_only === '1') bits.push('복수만');
     } else if(e.pos === 'verb' && x.aspect){
-      bits.push(x.aspect === 'imperfective' ? '불완료상' : x.aspect === 'perfective' ? '완료상' : x.aspect);
+      bits.push(x.aspect === 'imperfective' ? '불완료상' : x.aspect === 'perfective' ? '완료상' : x.aspect === 'both' ? '불완료·완료상' : x.aspect);
     }
+    if(e.level) bits.push(e.level);
+    if(e.tg) e.tg.forEach(t => bits.push(OR_TAG_LABEL[t] || t));
     return bits.join(' · ');
   }
   function orSummary(result){
@@ -2125,6 +2261,19 @@
     return out.join(' ; ');
   }
 
+  // Appends text to `el`, wrapping [start, start+len) (Tatoeba offsets into the stressed text) in <mark>.
+  function appendStressed(el, raw, start, len){
+    const text = String(raw);
+    if(typeof start === 'number' && typeof len === 'number' && len > 0 && start + len <= text.length){
+      el.appendChild(document.createTextNode(orStress(text.slice(0, start))));
+      const m = document.createElement('mark');
+      m.textContent = orStress(text.slice(start, start + len));
+      el.appendChild(m);
+      el.appendChild(document.createTextNode(orStress(text.slice(start + len))));
+    } else {
+      el.textContent = orStress(text);
+    }
+  }
   function buildOREntryEl(e){
     const wrap = document.createElement('div');
     wrap.className = 'or-entry';
@@ -2155,6 +2304,21 @@
       pt.textContent = '짝: '+e.x.partner;
       wrap.appendChild(pt);
     }
+    (e.ex || []).forEach(ex=>{
+      const box = document.createElement('div');
+      box.className = 'or-ex';
+      const ru = document.createElement('div');
+      ru.className = 'or-ex-ru';
+      appendStressed(ru, ex[0], ex[2], ex[3]);
+      box.appendChild(ru);
+      if(ex[1]){
+        const tr = document.createElement('div');
+        tr.className = 'or-forms';
+        tr.textContent = ex[1];
+        box.appendChild(tr);
+      }
+      wrap.appendChild(box);
+    });
     return wrap;
   }
 
@@ -2355,6 +2519,19 @@
         tr.textContent = item.sentenceTranslation;
         right.appendChild(tr);
       }
+    }
+    const topEntry = (item.dict && item.dict.length && item.dict[0].entries[0]) || null;
+    if(topEntry && topEntry.ex && topEntry.ex.length){
+      topEntry.ex.forEach(ex=>{
+        const box = document.createElement('div');
+        box.className = 'wb-dex';
+        const ru = document.createElement('div');
+        ru.className = 'wb-dex-ru';
+        appendStressed(ru, ex[0], ex[2], ex[3]);
+        box.appendChild(ru);
+        if(ex[1]){ const tr = document.createElement('div'); tr.textContent = ex[1]; box.appendChild(tr); }
+        right.appendChild(box);
+      });
     }
     row.appendChild(left);
     row.appendChild(right);
@@ -2778,6 +2955,12 @@
         });
       });
     }
+
+    // Most recently selected word/phrase first. page.selected is a Set, so it keeps click order
+    // (re-selecting a word moves it to the end); a run counts as recent as its newest member.
+    const clickOrder = new Map(selectedArr.map((idx, k) => [idx, k]));
+    const recency = job => Array.isArray(job.refKey) ? Math.max(...job.refKey.map(i => clickOrder.get(i))) : clickOrder.get(job.refKey);
+    jobs.sort((a, b) => recency(b) - recency(a));
 
     jobs.forEach(job=>{
       const bodies = containers.map(c => buildSelectionBlock(c, job.text, job.refKey, page, opts.onChange));
@@ -3426,6 +3609,9 @@
         if(!e.exact && e.tags && e.tags.length) html += '<br><span class="orx-sub">형태: '+escHtml(e.tags.slice(0, 4).join(', '))+'</span>';
         html += '<br>'+escHtml(e.en || '');
         if(e.x && e.x.partner) html += '<br><span class="orx-sub">짝: '+escHtml(e.x.partner)+'</span>';
+        (e.ex || []).forEach(ex=>{
+          html += '<div class="orx-ex"><i>'+escHtml(orStress(ex[0]))+'</i>'+(ex[1] ? '<br><span class="orx-sub">'+escHtml(ex[1])+'</span>' : '')+'</div>';
+        });
         html += '</div>';
       });
     });
@@ -3488,6 +3674,7 @@
 .orx { text-align:left; font-size:15px; margin:8px 0; padding:6px 8px; border:1px solid #93a1a1; border-radius:8px; }
 .orx-meta { color:#2aa198; font-size:13px; }
 .orx-sub { color:#586e75; font-size:13px; text-align:left; }
+.orx-ex { margin:6px 0 0 4px; padding-left:8px; border-left:2px solid #93a1a1; font-size:14px; }
 .orx-src { font-size:11px; color:#93a1a1; text-align:right; }
 .nightMode .card { color:#eee8d5; background-color:#002b36; }
 .nightMode .orx-sub { color:#93a1a1; }`,
@@ -3834,7 +4021,14 @@
     // in the left panel if you'd rather start fresh.
 
     state.pinScope = data.pinScope === 'all' ? 'all' : 'doc';
-    state.docs = data.docs.map(sd=>{
+    state.docs = data.docs.map(docFromSaved);
+    state.activeDocId = data.docs.some(d=>d.id===data.activeDocId) ? data.activeDocId : (state.docs[0] ? state.docs[0].id : null);
+    finishRestore(data, when);
+  }
+
+  // Rebuilds a runtime document from its serialized form (shared by auto-restore and backup import).
+  function docFromSaved(sd){
+    {
       const pages = (sd.pages||[]).map(sp=>{
         const {segments, wordCount} = tokenizeParagraph(sp.rawText);
         return {
@@ -3862,8 +4056,10 @@
         sourceLang: sd.sourceLang || 'ru',
         pinnedTokens: Array.isArray(sd.pinnedTokens) ? sd.pinnedTokens : []
       };
-    });
-    state.activeDocId = data.docs.some(d=>d.id===data.activeDocId) ? data.activeDocId : (state.docs[0] ? state.docs[0].id : null);
+    }
+  }
+
+  function finishRestore(data, when){
     // Saves made before pinned words became per-document kept one global list: move it into the
     // active document so nothing is lost.
     if(Array.isArray(data.pinnedTokens) && data.pinnedTokens.length && !data.docs.some(d => Array.isArray(d.pinnedTokens))){
@@ -3889,6 +4085,81 @@
     try{ localStorage.removeItem(PROGRESS_KEY); }catch(e){}
     saveStatusLabel.textContent = '자동 저장: 아직 없음';
   });
+  // ---------- Backup file (export / import) ----------
+  // The browser/app storage disappears when site data is cleared or the app is uninstalled, so the
+  // whole state (documents, selections, bookmarks, pinned words incl. dictionary snapshots,
+  // translations, settings) can be saved to a .json file and loaded back later.
+  const btnBackup = document.getElementById('btnBackup');
+  const btnRestore = document.getElementById('btnRestore');
+  const restoreInput = document.getElementById('restoreInput');
+
+  btnBackup.addEventListener('click', ()=>{
+    if(!state.docs.length){ alert('백업할 작업이 없습니다. 먼저 텍스트를 불러오세요.'); return; }
+    const data = serializeProgress();
+    data.app = 'ru-reader';
+    data.backupVersion = 1;
+    const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const d = new Date(), pad = n => String(n).padStart(2,'0');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'russian-reader-backup-'+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+'-'+pad(d.getHours())+pad(d.getMinutes())+'.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+    saveStatusLabel.textContent = '백업 저장: '+formatSavedTime(Date.now())+' (작업 '+state.docs.length+'개)';
+  });
+
+  btnRestore.addEventListener('click', ()=> restoreInput.click());
+  restoreInput.addEventListener('change', async (e)=>{
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    let data;
+    try{
+      data = JSON.parse(await file.text());
+      if(!data || !Array.isArray(data.docs) || !data.docs.length) throw new Error('작업이 없습니다');
+      data.docs.forEach(d => { d.pages = (Array.isArray(d.pages) ? d.pages : []).filter(pg => pg && typeof pg.rawText === 'string'); });
+      if(!data.docs.some(d => d.pages.length)) throw new Error('본문이 없습니다');
+    }catch(err){
+      alert('백업 파일을 읽을 수 없습니다: '+err.message);
+      return;
+    }
+    const pinCount = data.docs.reduce((n, d) => n + (Array.isArray(d.pinnedTokens) ? d.pinnedTokens.length : 0), 0);
+    const when = data.savedAt ? new Date(data.savedAt).toLocaleString() : '시각 미상';
+    const wasEmpty = state.docs.length === 0;
+    if(!confirm('백업 파일('+when+')의 작업 '+data.docs.length+'개(고정 단어 '+pinCount+'개)를 불러올까요?'
+        + (wasEmpty ? '\n(설정도 함께 복원됩니다)' : '\n현재 작업은 그대로 두고 목록에 추가합니다.'))) return;
+    try{
+      const used = new Set(state.docs.map(d => d.id));
+      const added = data.docs.filter(d => d.pages.length).map(sd => {
+        const doc = docFromSaved(sd);
+        if(used.has(doc.id)) doc.id = genDocId();
+        used.add(doc.id);
+        return doc;
+      });
+      const activeIdx = data.docs.filter(d => d.pages.length).findIndex(d => d.id === data.activeDocId);
+      state.docs.push(...added);
+      state.activeDocId = added[Math.max(activeIdx, 0)].id;
+      if(wasEmpty){
+        state.pinScope = data.pinScope === 'all' ? 'all' : 'doc';
+        if(data.settings) Object.assign(state.settings, data.settings);
+        applySettingsToDOM();
+      }
+      renderBookmarks();
+      renderPinnedTokens();
+      renderTaskLists();
+      renderTranslationSlotsUI();
+      if(state.expanded) renderExpandedView(); else renderPage();
+      saveProgressToStorage(false);
+      saveStatusLabel.textContent = '백업 불러옴: 작업 '+added.length+'개 추가';
+      closeDrawerIfMobile();
+    }catch(err){
+      alert('불러오기 중 오류: '+err.message);
+    }
+  });
+
   window.addEventListener('beforeunload', ()=>{
     if(state.docs.length) saveProgressToStorage(false);
   });

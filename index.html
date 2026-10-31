@@ -185,7 +185,8 @@
   .wb-head button{font-size:14px;padding:4px 10px;line-height:1.2;}
   .wb-head input{font-size:13px;width:150px;max-width:40vw;}
   .wb-body{flex:1;overflow-y:auto;padding:0 0 18px;-webkit-overflow-scrolling:touch;}
-  .wb-table{max-width:1000px;margin:0 auto;}
+  .wb-table{max-width:1000px;margin:0 auto;zoom:var(--wb-zoom,1);}
+  .license-note a{color:inherit;}
   .wb-row{
     display:grid;grid-template-columns:minmax(120px,38%) 1fr;
     border-bottom:1px solid var(--border);
@@ -214,7 +215,6 @@
   .wb-dex-ru mark{background:rgba(38,139,210,.2);color:inherit;font-style:normal;font-weight:700;border-radius:3px;}
   .wb-group{padding:8px 14px;font-size:12px;font-weight:700;color:var(--accent2);background:var(--bg-alt);border-bottom:1px solid var(--border);}
   .wb-empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;}
-  .wb-foot{padding:6px 14px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);text-align:center;}
   .wb-nav{z-index:130;}
   #wbPrev{left:6px;}
   #wbNext{right:6px;}
@@ -761,6 +761,9 @@
       </div>
       <div class="small-note">내보내기 버튼을 누르면 포함할 항목을 고를 수 있습니다. 파일 이름은 작업 제목을 따릅니다.</div>
     </div>
+    <div class="ctrl-group license-note">
+      <div class="small-note">사전 데이터: <a href="https://en.openrussian.org" target="_blank" rel="noopener">OpenRussian.org</a> (CC BY-SA 4.0) · 예문: <a href="https://tatoeba.org" target="_blank" rel="noopener">Tatoeba</a> (CC BY 2.0 FR)</div>
+    </div>
   </aside>
 
   <main class="main-col">
@@ -875,11 +878,12 @@
     <h3 id="wbTitle">단어장</h3>
     <span class="wb-sub" id="wbCount"></span>
     <input type="text" id="wbFilter" placeholder="단어·뜻 검색" aria-label="단어장 검색">
+    <button id="wbZoomOut" title="축소" aria-label="단어장 축소">🔍−</button>
+    <button id="wbZoomIn" title="확대" aria-label="단어장 확대">🔍＋</button>
     <button id="wbRefresh" title="OpenRussian 데이터로 뜻·품사 갱신" aria-label="단어장 갱신">🔄</button>
     <button id="wbExport" title="Anki 카드(.apkg)로 내려받기" aria-label="Anki 카드 내려받기">⬇</button>
   </div>
   <div class="wb-body" id="wbBody"></div>
-  <div class="wb-foot" id="wbFoot">사전 데이터: OpenRussian.org · CC BY-SA 4.0</div>
   <button id="wbPrev" class="float-nav wb-nav" title="이전 페이지" aria-label="이전 페이지">‹</button>
   <button id="wbNext" class="float-nav wb-nav" title="다음 페이지" aria-label="다음 페이지">›</button>
 </div>
@@ -966,7 +970,8 @@
       ruSize: 20,
       koSize: 16,
       dark: false,
-      tokenDict: 'google'   // selected-word lookup source: 'google' | 'openrussian'
+      tokenDict: 'google',  // selected-word lookup source: 'google' | 'openrussian'
+      wbZoom: 100           // wordbook viewer zoom in percent (60..200)
     }
   };
 
@@ -1074,7 +1079,8 @@
   const wbClose = document.getElementById('wbClose');
   const wbPrev = document.getElementById('wbPrev');
   const wbNext = document.getElementById('wbNext');
-  const wbFoot = document.getElementById('wbFoot');
+  const wbZoomOut = document.getElementById('wbZoomOut');
+  const wbZoomIn = document.getElementById('wbZoomIn');
   const btnRefreshPinned = document.getElementById('btnRefreshPinned');
   const btnRefreshPinnedMobile = document.getElementById('btnRefreshPinnedMobile');
   const pinScopeSelect = document.getElementById('pinScopeSelect');
@@ -2381,7 +2387,13 @@
   // A wordbook is the set of pinned words of one document (or all documents). The list sits under
   // the task list; clicking one opens a full-screen viewer (word + chips on a yellow cell, meaning
   // + example sentence on the right). Data is exactly what the Anki export uses.
-  const WB = { open:false, scope:'all' };
+  const WB = { open:false, scope:'all', page:0 };
+  const WB_ZOOM_MIN = 60, WB_ZOOM_MAX = 200, WB_ZOOM_STEP = 10;
+  // Words per page follow the zoom: 80% -> 50 words ... 200% -> 20 words (clamped to 20..50).
+  function wbPerPage(){
+    const z = Math.min(WB_ZOOM_MAX, Math.max(WB_ZOOM_MIN, state.settings.wbZoom || 100));
+    return Math.max(20, Math.min(50, Math.round(4000 / z)));
+  }
 
   function wbEntries(){
     if(WB.scope === 'all'){
@@ -2546,10 +2558,17 @@
       return [item.word, info.main, info.extras.join(' '), item.sentence, item.sentenceTranslation].join(' ').toLowerCase().includes(q);
     });
     wbTitle.textContent = WB.scope === 'all' ? '📚 전체 단어장' : ((state.docs.find(d => d.id === WB.scope) || {}).title || '단어장');
-    wbCount.textContent = q ? shown.length+' / '+all.length+'개' : all.length+'개';
+    const per = wbPerPage();
+    const pages = Math.max(1, Math.ceil(shown.length / per));
+    WB.page = Math.max(0, Math.min(WB.page, pages - 1));
+    wbCount.textContent = (q ? shown.length+' / '+all.length+'개' : all.length+'개') + (pages > 1 ? ' · '+(WB.page+1)+'/'+pages+'쪽' : '');
     wbExport.disabled = all.length === 0;
     wbRefresh.disabled = all.length === 0;
-    wbFoot.style.display = all.some(({item}) => item.dict && item.dict.length) ? '' : 'none';
+    wbPrev.disabled = WB.page <= 0;
+    wbNext.disabled = WB.page >= pages - 1;
+    wbPrev.style.visibility = wbNext.style.visibility = pages > 1 ? '' : 'hidden';
+    wbZoomOut.disabled = (state.settings.wbZoom || 100) <= WB_ZOOM_MIN;
+    wbZoomIn.disabled = (state.settings.wbZoom || 100) >= WB_ZOOM_MAX;
     wbBody.innerHTML = '';
     if(shown.length === 0){
       const empty = document.createElement('div');
@@ -2560,8 +2579,9 @@
     }
     const table = document.createElement('div');
     table.className = 'wb-table';
+    table.style.setProperty('--wb-zoom', String((state.settings.wbZoom || 100) / 100));
     let lastDoc = null;
-    shown.forEach(({item, doc})=>{
+    shown.slice(WB.page * per, (WB.page + 1) * per).forEach(({item, doc})=>{
       if(WB.scope === 'all' && doc.id !== lastDoc){
         const g = document.createElement('div');
         g.className = 'wb-group';
@@ -2577,6 +2597,7 @@
   function openWordbook(scope){
     WB.open = true;
     WB.scope = scope;
+    WB.page = 0;
     wbFilter.value = '';
     wordbookView.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -2590,12 +2611,29 @@
   }
   // Page-wise scrolling (instant, e-ink friendly), same idea as the paragraph arrows.
   function wbPage(dir){
-    wbBody.scrollBy({top: dir * Math.max(120, wbBody.clientHeight * 0.9), behavior: 'auto'});
+    const before = WB.page;
+    WB.page += dir;
+    renderWordbookView();           // clamps WB.page
+    if(WB.page !== before) wbBody.scrollTop = 0;
   }
+  function wbSetZoom(delta){
+    const cur = state.settings.wbZoom || 100;
+    const next = Math.min(WB_ZOOM_MAX, Math.max(WB_ZOOM_MIN, cur + delta));
+    if(next === cur) return;
+    const firstIdx = WB.page * wbPerPage();      // keep the first visible word on the page
+    state.settings.wbZoom = next;
+    saveSettings();
+    WB.page = Math.floor(firstIdx / wbPerPage());
+    renderWordbookView();
+    wbBody.scrollTop = 0;
+    saveStatusLabel.textContent = '단어장 배율 '+next+'% · 한 쪽 '+wbPerPage()+'단어';
+  }
+  wbZoomOut.addEventListener('click', ()=> wbSetZoom(-WB_ZOOM_STEP));
+  wbZoomIn.addEventListener('click', ()=> wbSetZoom(WB_ZOOM_STEP));
   wbClose.addEventListener('click', closeWordbook);
   wbPrev.addEventListener('click', ()=> wbPage(-1));
   wbNext.addEventListener('click', ()=> wbPage(1));
-  wbFilter.addEventListener('input', ()=>{ renderWordbookView(); wbBody.scrollTop = 0; });
+  wbFilter.addEventListener('input', ()=>{ WB.page = 0; renderWordbookView(); wbBody.scrollTop = 0; });
   wbRefresh.addEventListener('click', ()=> refreshPinnedDict(wbEntries()));
   wbExport.addEventListener('click', ()=>{
     const entries = wbEntries();
@@ -3615,7 +3653,6 @@
         html += '</div>';
       });
     });
-    if(any) html += '<div class="orx-src">OpenRussian.org · CC BY-SA 4.0</div>';
     return html;
   }
 
@@ -3675,7 +3712,6 @@
 .orx-meta { color:#2aa198; font-size:13px; }
 .orx-sub { color:#586e75; font-size:13px; text-align:left; }
 .orx-ex { margin:6px 0 0 4px; padding-left:8px; border-left:2px solid #93a1a1; font-size:14px; }
-.orx-src { font-size:11px; color:#93a1a1; text-align:right; }
 .nightMode .card { color:#eee8d5; background-color:#002b36; }
 .nightMode .orx-sub { color:#93a1a1; }`,
         tmpls: [{
@@ -3684,7 +3720,7 @@
           afmt: '{{FrontSide}}<hr id="answer">{{뜻}}<br><br><i>{{예문}}</i><br>{{예문 뜻}}<br><br>{{사전}}'
         }]
       });
-      const deck = new Deck(Date.now(), deckBase + ' 단어');
+      const deck = new Deck(Date.now(), deckBase + ' 단어', '사전 데이터: OpenRussian.org (CC BY-SA 4.0) · 예문: Tatoeba (CC BY 2.0 FR) — 카드의 사전/예문 내용 출처');
       entries.forEach(({item})=>{
         deck.addNote(model.note([item.word, item.meaning, item.sentence, item.sentenceTranslation, buildAnkiDictHtml(item.word, groupsById.get(item.id))]));
       });
